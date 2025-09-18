@@ -14,6 +14,7 @@ export async function cleanDatabase() {
   // Delete in reverse order to handle foreign key constraints
   await testDb.stockMovement.deleteMany()
   await testDb.inventory.deleteMany()
+  await testDb.priceHistory.deleteMany()
   await testDb.title.deleteMany()
   await testDb.series.deleteMany()
   await testDb.warehouse.deleteMany()
@@ -66,6 +67,17 @@ export const createTestPrinter = async (data?: Partial<any>) => {
   return await testDb.printer.create({
     data: {
       name: 'Test Printer',
+      ...data
+    }
+  })
+}
+
+export const createTestPriceHistory = async (data?: Partial<any>) => {
+  return await testDb.priceHistory.create({
+    data: {
+      titleId: 1, // Will be overridden by data
+      rrp: 19.99,
+      effectiveFrom: new Date('2024-01-01'),
       ...data
     }
   })
