@@ -19,11 +19,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
    - ✅ Additional coverage: Price history and RRP versioning tests, Printer model integration tests
    - **Completion Notes:** Comprehensive test coverage implemented including database schema validation, relationship and constraint testing, multi-warehouse inventory aggregation logic, price history and RRP versioning tests, and printer model integration tests. All test files created and Prisma client regenerated.
 
-1.2 **Design and implement Prisma schema for warehouses**
-   - Create Warehouse model with location, capacity, and operational status
-   - Add warehouse hierarchy support (main/satellite locations)
-   - Implement warehouse-specific configuration fields
-   - Add audit fields (created_at, updated_at, created_by)
+1.2 **[x] Design and implement Prisma schema for warehouses** ✅ COMPLETED
+   - ✅ Create Warehouse model with location, capacity, and operational status
+   - ✅ Add warehouse hierarchy support (main/satellite locations)
+   - ✅ Implement warehouse-specific configuration fields
+   - ✅ Add audit fields (created_at, updated_at, created_by)
+   - **Completion Notes:** Warehouse model fully implemented in Prisma schema with name, code, location, fulfillsChannels (JSON), isActive flag, and audit timestamps. Includes proper indexes, unique constraints, and relationships to inventory and stock movements. Comprehensive test suite written covering creation, validation, queries, updates, and business logic.
 
 1.3 **Implement Title and Series models**
    - Create Title model with ISBN, publishing details, and metadata
