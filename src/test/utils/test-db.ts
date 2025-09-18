@@ -1,0 +1,72 @@
+import { PrismaClient } from '@prisma/client'
+
+// Create a separate test database client
+export const testDb = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/bookstock_test'
+    }
+  }
+})
+
+// Helper function to clean up database between tests
+export async function cleanDatabase() {
+  // Delete in reverse order to handle foreign key constraints
+  await testDb.stockMovement.deleteMany()
+  await testDb.inventory.deleteMany()
+  await testDb.title.deleteMany()
+  await testDb.series.deleteMany()
+  await testDb.warehouse.deleteMany()
+  await testDb.printer.deleteMany()
+}
+
+// Helper function to disconnect from database
+export async function disconnectTestDb() {
+  await testDb.$disconnect()
+}
+
+// Test data factories
+export const createTestSeries = async (data?: Partial<any>) => {
+  return await testDb.series.create({
+    data: {
+      name: 'Test Series',
+      description: 'A test series for unit testing',
+      ...data
+    }
+  })
+}
+
+export const createTestWarehouse = async (data?: Partial<any>) => {
+  return await testDb.warehouse.create({
+    data: {
+      name: 'Test Warehouse',
+      code: 'TST',
+      location: 'UK',
+      fulfillsChannels: ['ONLINE_SALES'],
+      ...data
+    }
+  })
+}
+
+export const createTestTitle = async (data?: Partial<any>) => {
+  return await testDb.title.create({
+    data: {
+      isbn: '9781234567890',
+      title: 'Test Book',
+      author: 'Test Author',
+      format: 'PAPERBACK',
+      rrp: 19.99,
+      unitCost: 5.50,
+      ...data
+    }
+  })
+}
+
+export const createTestPrinter = async (data?: Partial<any>) => {
+  return await testDb.printer.create({
+    data: {
+      name: 'Test Printer',
+      ...data
+    }
+  })
+}

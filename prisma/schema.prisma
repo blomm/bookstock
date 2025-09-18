@@ -1,0 +1,233 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Series {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  titles      Title[]
+
+  @@map("series")
+  @@index([name])
+}
+
+model Warehouse {
+  id               Int      @id @default(autoincrement())
+  name             String   @db.VarChar(100)  // Turnaround, ACC, Flostream
+  code             String   @unique @db.VarChar(10)  // TRN, ACC, FLS
+  location         String   @db.VarChar(100)  // UK, US
+  fulfillsChannels Json     // ["UK_TRADE", "ROW_TRADE"] for Turnaround
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  inventory           Inventory[]
+  stockMovements      StockMovement[] @relation("WarehouseMovements")
+  sourceMovements     StockMovement[] @relation("SourceWarehouse")
+  destinationMovements StockMovement[] @relation("DestinationWarehouse")
+
+  @@map("warehouses")
+  @@index([code])
+  @@index([isActive])
+}
+
+model Printer {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(150)  // Lightning Source UK, Pureprint Group, etc.
+  code            String?  @unique @db.VarChar(20)  // Optional short code
+  location        String?  @db.VarChar(100)  // UK, US, EU, etc.
+  contactEmail    String?  @db.VarChar(255)
+  contactPhone    String?  @db.VarChar(50)
+  website         String?  @db.VarChar(255)
+  specialties     Json?    // ["Digital", "Offset", "Large Format"] etc.
+  isActive        Boolean  @default(true) @map("is_active")
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  stockMovements  StockMovement[]
+
+  @@map("printers")
+  @@index([name])
+  @@index([code])
+  @@index([isActive])
+  @@index([location])
+}
+
+model Title {
+  // Core Publishing Fields
+  id              Int       @id @default(autoincrement())
+  isbn            String    @unique @db.VarChar(13)
+  title           String    @db.VarChar(500)
+  author          String    @db.VarChar(255)
+  format          Format
+  rrp             Decimal   @db.Decimal(8, 2)
+  unitCost        Decimal   @db.Decimal(8, 2) @map("unit_cost")
+  pageCount       Int?      @map("page_count")
+  publicationDate DateTime? @map("publication_date")
+  publisher       String?   @db.VarChar(255)
+  category        String?   @db.VarChar(100)
+  subcategory     String?   @db.VarChar(100)
+
+  // Physical Product Fields
+  dimensions      String?   @db.VarChar(50)  // L×W×H in mm
+  weight          Int?      // Weight in grams
+  bindingType     String?   @db.VarChar(50) @map("binding_type")
+  coverFinish     String?   @db.VarChar(50) @map("cover_finish")
+
+  // Commercial Fields
+  tradeDiscount   Decimal?  @db.Decimal(5, 2) @map("trade_discount")  // Percentage
+  royaltyRate     Decimal?  @db.Decimal(5, 2) @map("royalty_rate")    // Percentage
+  royaltyThreshold Int?     @map("royalty_threshold")                  // Minimum sales
+  printRunSize    Int?      @map("print_run_size")
+  reprintThreshold Int?     @map("reprint_threshold")
+
+  // Additional Metadata
+  description     String?   @db.Text
+  keywords        String?   @db.VarChar(500)
+  language        String?   @db.VarChar(10)  // ISO language code
+  territoryRights String?   @db.VarChar(200) @map("territory_rights")
+
+  // Relationships
+  seriesId        Int?      @map("series_id")
+  series          Series?   @relation(fields: [seriesId], references: [id])
+  inventory       Inventory[]
+  stockMovements  StockMovement[]
+  priceHistory    PriceHistory[]
+
+  // System Fields
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("titles")
+  @@index([isbn])
+  @@index([title])
+  @@index([author])
+  @@index([seriesId])
+  @@index([format])
+  @@index([category])
+  @@index([publisher])
+  @@index([publicationDate])
+}
+
+model Inventory {
+  id                 Int       @id @default(autoincrement())
+  titleId            Int       @map("title_id")
+  warehouseId        Int       @map("warehouse_id")
+  currentStock       Int       @map("current_stock")
+  reservedStock      Int       @default(0) @map("reserved_stock")
+  lastMovementDate   DateTime? @map("last_movement_date")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  title              Title     @relation(fields: [titleId], references: [id])
+  warehouse          Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([titleId, warehouseId])
+  @@map("inventory")
+  @@index([titleId])
+  @@index([warehouseId])
+  @@index([currentStock])
+}
+
+model PriceHistory {
+  id              Int      @id @default(autoincrement())
+  titleId         Int      @map("title_id")
+  rrp             Decimal  @db.Decimal(8, 2)
+  unitCost        Decimal? @db.Decimal(8, 2) @map("unit_cost")  // Optional: unit cost at this time
+  tradeDiscount   Decimal? @db.Decimal(5, 2) @map("trade_discount")  // Optional: trade discount at this time
+  effectiveFrom   DateTime @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")  // NULL means current price
+  reason          String?  @db.VarChar(255)  // Reason for price change
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  title           Title    @relation(fields: [titleId], references: [id])
+
+  @@map("price_history")
+  @@index([titleId])
+  @@index([effectiveFrom])
+  @@index([effectiveTo])
+  @@unique([titleId, effectiveFrom])  // Prevent duplicate price records for same date
+}
+
+model StockMovement {
+  id                    Int          @id @default(autoincrement())
+  titleId               Int          @map("title_id")
+  warehouseId           Int          @map("warehouse_id")
+  movementType          MovementType @map("movement_type")
+  quantity              Int          // Positive for inbound, negative for outbound
+  movementDate          DateTime     @map("movement_date")
+
+  // Financial snapshot at time of transaction
+  rrpAtTime             Decimal?     @db.Decimal(8, 2) @map("rrp_at_time")  // RRP when sale occurred
+  unitCostAtTime        Decimal?     @db.Decimal(8, 2) @map("unit_cost_at_time")  // Unit cost when transaction occurred
+  tradeDiscountAtTime   Decimal?     @db.Decimal(5, 2) @map("trade_discount_at_time")  // Trade discount when sale occurred
+
+  sourceWarehouseId     Int?         @map("source_warehouse_id")
+  destinationWarehouseId Int?        @map("destination_warehouse_id")
+  printerId             Int?         @map("printer_id")
+  referenceNumber       String?      @db.VarChar(100) @map("reference_number")
+  notes                 String?      @db.Text
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  // Relationships
+  title                 Title        @relation(fields: [titleId], references: [id])
+  warehouse             Warehouse    @relation("WarehouseMovements", fields: [warehouseId], references: [id])
+  sourceWarehouse       Warehouse?   @relation("SourceWarehouse", fields: [sourceWarehouseId], references: [id])
+  destinationWarehouse  Warehouse?   @relation("DestinationWarehouse", fields: [destinationWarehouseId], references: [id])
+  printer               Printer?     @relation(fields: [printerId], references: [id])
+
+  @@map("stock_movements")
+  @@index([titleId])
+  @@index([warehouseId])
+  @@index([movementType])
+  @@index([movementDate])
+  @@index([sourceWarehouseId])
+  @@index([destinationWarehouseId])
+  @@index([printerId])
+  @@index([rrpAtTime])
+}
+
+enum Format {
+  HARDCOVER
+  PAPERBACK
+  DIGITAL
+  AUDIOBOOK
+}
+
+enum MovementType {
+  // Inbound movements
+  PRINT_RECEIVED
+  WAREHOUSE_TRANSFER
+
+  // Outbound - Sales channels
+  ONLINE_SALES        // Via Flostream
+  UK_TRADE_SALES      // Via Turnaround
+  US_TRADE_SALES      // Via ACC
+  ROW_TRADE_SALES     // Via Turnaround
+  DIRECT_SALES        // Direct sales channel
+
+  // Outbound - Other
+  PULPED
+  DAMAGED
+  FREE_COPIES
+}
