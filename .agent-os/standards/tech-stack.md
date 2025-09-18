@@ -46,6 +46,8 @@ Hosting Region: Closest to primary user base
 
 Database Hosting: Neon Serverless PostgreSQL
 
+Local Development Database: Docker Compose with PostgreSQL 17+ containers
+
 Database Backups: PITR enabled; daily logical backups retained
 
 Asset Storage: Amazon S3 (or Cloudflare R2)
@@ -61,6 +63,10 @@ CI/CD Platform: GitHub Actions (lint, typecheck, tests) + Vercel Git integration
 CI/CD Trigger: PR → Preview; push to main/staging → deploy to Prod/Staging
 
 Tests: Vitest (unit), React Testing Library (integration), Playwright (e2e) run before deployment
+
+Local Development: Docker Compose for database containers and isolated testing
+
+Containerization: Docker for database services; optional for application deployment
 
 Linting & Format: ESLint + Prettier (Next.js/recommended configs)
 

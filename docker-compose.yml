@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # Main development database
+  postgres-dev:
+    image: postgres:17-alpine
+    container_name: bookstock-postgres-dev
+    environment:
+      POSTGRES_DB: bookstock_dev
+      POSTGRES_USER: bookstock
+      POSTGRES_PASSWORD: bookstock_dev_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookstock -d bookstock_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test database (separate instance for isolation)
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: bookstock-postgres-test
+    environment:
+      POSTGRES_DB: bookstock_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d bookstock_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - test
+
+  # Optional: Redis for caching (can be enabled when needed)
+  redis:
+    image: redis:7-alpine
+    container_name: bookstock-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    profiles:
+      - cache
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: bookstock-network
