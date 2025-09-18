@@ -26,11 +26,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
    - ✅ Add audit fields (created_at, updated_at, created_by)
    - **Completion Notes:** Warehouse model fully implemented in Prisma schema with name, code, location, fulfillsChannels (JSON), isActive flag, and audit timestamps. Includes proper indexes, unique constraints, and relationships to inventory and stock movements. Comprehensive test suite written covering creation, validation, queries, updates, and business logic.
 
-1.3 **Implement Title and Series models**
-   - Create Title model with ISBN, publishing details, and metadata
-   - Design Series model with hierarchical relationships
-   - Add title categorization and genre classification
-   - Implement title status tracking (active, discontinued, pre-order)
+1.3 **[x] Implement Title and Series models** ✅ COMPLETED
+   - ✅ Create Title model with ISBN, publishing details, and metadata
+   - ✅ Design Series model with hierarchical relationships
+   - ✅ Add title categorization and genre classification
+   - ✅ Implement title status tracking (active, discontinued, pre-order)
+   - **Completion Notes:** Title and Series models fully implemented in Prisma schema. Title model includes comprehensive publishing metadata (ISBN, author, format, pricing, physical specifications, commercial fields), category/subcategory classification, and complete series relationships. Added TitleStatus enum (ACTIVE, DISCONTINUED, PRE_ORDER) with status field defaulting to ACTIVE and proper indexing. Database migration successfully applied creating all tables, enums, indexes, and foreign key relationships.
 
 1.4 **Build inventory tracking models**
    - Create InventoryItem model linking titles to warehouses

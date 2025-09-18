@@ -103,6 +103,9 @@ model Title {
   language        String?   @db.VarChar(10)  // ISO language code
   territoryRights String?   @db.VarChar(200) @map("territory_rights")
 
+  // Status Tracking
+  status          TitleStatus @default(ACTIVE)
+
   // Relationships
   seriesId        Int?      @map("series_id")
   series          Series?   @relation(fields: [seriesId], references: [id])
@@ -123,6 +126,7 @@ model Title {
   @@index([category])
   @@index([publisher])
   @@index([publicationDate])
+  @@index([status])
 }
 
 model Inventory {
@@ -212,6 +216,12 @@ enum Format {
   PAPERBACK
   DIGITAL
   AUDIOBOOK
+}
+
+enum TitleStatus {
+  ACTIVE
+  DISCONTINUED
+  PRE_ORDER
 }
 
 enum MovementType {
