@@ -136,6 +136,18 @@ model Inventory {
   currentStock       Int       @map("current_stock")
   reservedStock      Int       @default(0) @map("reserved_stock")
   lastMovementDate   DateTime? @map("last_movement_date")
+
+  // Cost Basis and Valuation Fields
+  averageCost        Decimal?  @db.Decimal(8, 2) @map("average_cost")  // Weighted average cost per unit
+  totalValue         Decimal?  @db.Decimal(10, 2) @map("total_value")  // Total inventory value (cost * quantity)
+  lastCostUpdate     DateTime? @map("last_cost_update")               // When cost basis was last calculated
+
+  // Location-Specific Attributes
+  binLocation        String?   @db.VarChar(100) @map("bin_location")   // Specific location within warehouse
+  minStockLevel      Int?      @map("min_stock_level")                 // Warehouse-specific minimum stock
+  maxStockLevel      Int?      @map("max_stock_level")                 // Warehouse-specific maximum stock
+  reorderPoint       Int?      @map("reorder_point")                   // Warehouse-specific reorder threshold
+
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
@@ -148,6 +160,9 @@ model Inventory {
   @@index([titleId])
   @@index([warehouseId])
   @@index([currentStock])
+  @@index([averageCost])
+  @@index([minStockLevel])
+  @@index([reorderPoint])
 }
 
 model PriceHistory {

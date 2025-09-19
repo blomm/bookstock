@@ -33,11 +33,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
    - ✅ Implement title status tracking (active, discontinued, pre-order)
    - **Completion Notes:** Title and Series models fully implemented in Prisma schema. Title model includes comprehensive publishing metadata (ISBN, author, format, pricing, physical specifications, commercial fields), category/subcategory classification, and complete series relationships. Added TitleStatus enum (ACTIVE, DISCONTINUED, PRE_ORDER) with status field defaulting to ACTIVE and proper indexing. Database migration successfully applied creating all tables, enums, indexes, and foreign key relationships.
 
-1.4 **Build inventory tracking models**
-   - Create InventoryItem model linking titles to warehouses
-   - Implement quantity tracking with reserved/available splits
-   - Add cost basis and valuation fields per warehouse
-   - Design location-specific inventory attributes
+1.4 **[x] Build inventory tracking models** ✅ COMPLETED
+   - ✅ Create InventoryItem model linking titles to warehouses
+   - ✅ Implement quantity tracking with reserved/available splits
+   - ✅ Add cost basis and valuation fields per warehouse
+   - ✅ Design location-specific inventory attributes
+   - **Completion Notes:** Enhanced Inventory model with comprehensive tracking capabilities. Added cost basis fields (averageCost, totalValue, lastCostUpdate) and location-specific attributes (binLocation, minStockLevel, maxStockLevel, reorderPoint). Database migration successfully applied adding all new fields with proper indexing. Supports multi-warehouse inventory management with unique title-warehouse constraints and complete audit trails.
 
 1.5 **Implement stock movement transaction system**
    - Create StockMovement model for all inventory transactions
