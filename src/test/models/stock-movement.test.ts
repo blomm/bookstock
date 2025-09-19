@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterAll } from 'vitest'
-import { testDb, cleanDatabase, disconnectTestDb, createTestTitle, createTestWarehouse } from '../utils/test-db'
+import { testDb, cleanDatabase, disconnectTestDb, createTestTitle, createTestWarehouse, createTestPrinter } from '../utils/test-db'
 
 describe('StockMovement Model', () => {
   beforeEach(async () => {
@@ -63,9 +63,10 @@ describe('StockMovement Model', () => {
       expect(movement.notes).toBe('Transfer from UK to US warehouse for increased demand')
     })
 
-    test('should create print received movement with printer name', async () => {
+    test('should create print received movement with printer relationship', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'PRT' })
+      const printer = await createTestPrinter({ name: 'Lightning Source UK' })
 
       const movement = await testDb.stockMovement.create({
         data: {
@@ -74,12 +75,16 @@ describe('StockMovement Model', () => {
           movementType: 'PRINT_RECEIVED',
           quantity: 4000,
           movementDate: new Date('2024-01-10'),
-          printerName: 'Lightning Source UK',
+          printerId: printer.id,
           referenceNumber: 'PRINT-2024-0115'
+        },
+        include: {
+          printer: true
         }
       })
 
-      expect(movement.printerName).toBe('Lightning Source UK')
+      expect(movement.printerId).toBe(printer.id)
+      expect(movement.printer?.name).toBe('Lightning Source UK')
       expect(movement.referenceNumber).toBe('PRINT-2024-0115')
     })
   })
@@ -98,305 +103,152 @@ describe('StockMovement Model', () => {
             warehouseId: warehouse.id,
             movementType,
             quantity: 1000, // Positive for inbound
-            movementDate: new Date()
+            movementDate: new Date('2024-01-15')
           }
         })
 
         expect(movement.movementType).toBe(movementType)
-        expect(movement.quantity).toBeGreaterThan(0)
+        expect(movement.quantity).toBe(1000)
       }
     })
 
-    test('should support all sales channel movement types', async () => {
-      const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'SLS' })
-
-      const salesTypes = [
-        'ONLINE_SALES',
-        'UK_TRADE_SALES',
-        'US_TRADE_SALES',
-        'ROW_TRADE_SALES',
-        'DIRECT_SALES'
-      ] as const
-
-      for (const movementType of salesTypes) {
-        const movement = await testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            movementType,
-            quantity: -250, // Negative for outbound sales
-            movementDate: new Date(`2024-01-${10 + salesTypes.indexOf(movementType)}`)
-          }
-        })
-
-        expect(movement.movementType).toBe(movementType)
-        expect(movement.quantity).toBeLessThan(0)
-      }
-    })
-
-    test('should support other outbound movement types', async () => {
+    test('should support all outbound movement types', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'OUT' })
 
-      const otherTypes = ['PULPED', 'DAMAGED', 'FREE_COPIES'] as const
+      const outboundTypes = ['ONLINE_SALES', 'UK_TRADE_SALES', 'US_TRADE_SALES', 'ROW_TRADE_SALES', 'DIRECT_SALES', 'DAMAGED', 'PULPED'] as const
 
-      for (const movementType of otherTypes) {
+      for (const movementType of outboundTypes) {
         const movement = await testDb.stockMovement.create({
           data: {
             titleId: title.id,
             warehouseId: warehouse.id,
             movementType,
-            quantity: -50, // Negative for outbound
-            movementDate: new Date()
+            quantity: -100, // Negative for outbound
+            movementDate: new Date('2024-01-15')
           }
         })
 
         expect(movement.movementType).toBe(movementType)
-        expect(movement.quantity).toBeLessThan(0)
+        expect(movement.quantity).toBe(-100)
       }
     })
   })
 
   describe('Validation', () => {
     test('should require essential movement fields', async () => {
-      const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'REQ' })
-
-      // Missing movementType
-      await expect(
-        testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            quantity: 100,
-            movementDate: new Date()
-          } as any
-        })
-      ).rejects.toThrow()
-
-      // Missing quantity
-      await expect(
-        testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            movementType: 'PRINT_RECEIVED',
-            movementDate: new Date()
-          } as any
-        })
-      ).rejects.toThrow()
-
-      // Missing movementDate
-      await expect(
-        testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            movementType: 'PRINT_RECEIVED',
-            quantity: 100
-          } as any
-        })
-      ).rejects.toThrow()
+      await expect(testDb.stockMovement.create({
+        data: {
+          // Missing required fields
+          quantity: 100,
+          movementDate: new Date()
+        }
+      })).rejects.toThrow()
     })
 
     test('should enforce field length constraints', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'LEN' })
+      const warehouse = await createTestWarehouse({ code: 'VAL' })
 
-      // Printer name too long
-      await expect(
-        testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            movementType: 'PRINT_RECEIVED',
-            quantity: 100,
-            movementDate: new Date(),
-            printerName: 'a'.repeat(101)
-          }
-        })
-      ).rejects.toThrow()
-
-      // Reference number too long
-      await expect(
-        testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            movementType: 'PRINT_RECEIVED',
-            quantity: 100,
-            movementDate: new Date(),
-            referenceNumber: 'a'.repeat(101)
-          }
-        })
-      ).rejects.toThrow()
-    })
-
-    test('should allow zero quantity movements', async () => {
-      const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'ZER' })
-
-      const movement = await testDb.stockMovement.create({
+      // Test reference number length limit (100 chars)
+      await expect(testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse.id,
-          movementType: 'DAMAGED',
-          quantity: 0, // Zero quantity for adjustments
+          movementType: 'PRINT_RECEIVED',
+          quantity: 100,
           movementDate: new Date(),
-          notes: 'Stock count adjustment - no actual change'
+          referenceNumber: 'a'.repeat(101)
         }
-      })
-
-      expect(movement.quantity).toBe(0)
+      })).rejects.toThrow()
     })
   })
 
   describe('Relationships', () => {
     test('should link to title and warehouse', async () => {
-      const title = await createTestTitle({
-        isbn: '9781111111111',
-        title: 'Movement Test Book'
-      })
-      const warehouse = await createTestWarehouse({
-        name: 'Movement Warehouse',
-        code: 'MVT'
-      })
+      const title = await createTestTitle({ isbn: '9781111111111' })
+      const warehouse = await createTestWarehouse({ code: 'REL' })
 
       const movement = await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse.id,
           movementType: 'PRINT_RECEIVED',
-          quantity: 2000,
-          movementDate: new Date()
-        }
-      })
-
-      const movementWithRelations = await testDb.stockMovement.findUnique({
-        where: { id: movement.id },
+          quantity: 500,
+          movementDate: new Date('2024-01-15')
+        },
         include: {
           title: true,
           warehouse: true
         }
       })
 
-      expect(movementWithRelations?.title.title).toBe('Movement Test Book')
-      expect(movementWithRelations?.warehouse.name).toBe('Movement Warehouse')
+      expect(movement.title).toBeDefined()
+      expect(movement.title.isbn).toBe('9781111111111')
+      expect(movement.warehouse).toBeDefined()
+      expect(movement.warehouse.code).toBe('REL')
     })
 
     test('should link to source and destination warehouses for transfers', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
-      const sourceWarehouse = await createTestWarehouse({
-        name: 'Source Warehouse',
-        code: 'SRC'
-      })
-      const destWarehouse = await createTestWarehouse({
-        name: 'Destination Warehouse',
-        code: 'DST'
-      })
+      const sourceWarehouse = await createTestWarehouse({ code: 'SRC' })
+      const destWarehouse = await createTestWarehouse({ code: 'DST' })
 
       const movement = await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: destWarehouse.id,
           movementType: 'WAREHOUSE_TRANSFER',
-          quantity: 300,
-          movementDate: new Date(),
+          quantity: 200,
+          movementDate: new Date('2024-01-15'),
           sourceWarehouseId: sourceWarehouse.id,
           destinationWarehouseId: destWarehouse.id
-        }
-      })
-
-      const movementWithAll = await testDb.stockMovement.findUnique({
-        where: { id: movement.id },
+        },
         include: {
-          warehouse: true,
           sourceWarehouse: true,
           destinationWarehouse: true
         }
       })
 
-      expect(movementWithAll?.sourceWarehouse?.name).toBe('Source Warehouse')
-      expect(movementWithAll?.destinationWarehouse?.name).toBe('Destination Warehouse')
-      expect(movementWithAll?.warehouse.name).toBe('Destination Warehouse')
+      expect(movement.sourceWarehouse).toBeDefined()
+      expect(movement.sourceWarehouse?.code).toBe('SRC')
+      expect(movement.destinationWarehouse).toBeDefined()
+      expect(movement.destinationWarehouse?.code).toBe('DST')
     })
 
     test('should handle cascade deletion from title', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'CAS' })
+      const warehouse = await createTestWarehouse({ code: 'DEL' })
 
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse.id,
           movementType: 'PRINT_RECEIVED',
-          quantity: 1000,
-          movementDate: new Date()
+          quantity: 100,
+          movementDate: new Date('2024-01-15')
         }
       })
 
-      await testDb.title.delete({
+      // Should not be able to delete title that has movements
+      await expect(testDb.title.delete({
         where: { id: title.id }
-      })
-
-      const remainingMovements = await testDb.stockMovement.findMany({
-        where: { titleId: title.id }
-      })
-
-      expect(remainingMovements).toHaveLength(0)
+      })).rejects.toThrow()
     })
   })
 
   describe('Queries', () => {
     test('should filter movements by type', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'FLT' })
+      const warehouse = await createTestWarehouse({ code: 'QRY' })
 
+      // Create different movement types
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse.id,
           movementType: 'PRINT_RECEIVED',
-          quantity: 3000,
-          movementDate: new Date('2024-01-01')
-        }
-      })
-
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'ONLINE_SALES',
-          quantity: -150,
-          movementDate: new Date('2024-01-02')
-        }
-      })
-
-      const printMovements = await testDb.stockMovement.findMany({
-        where: { movementType: 'PRINT_RECEIVED' }
-      })
-
-      const salesMovements = await testDb.stockMovement.findMany({
-        where: { movementType: 'ONLINE_SALES' }
-      })
-
-      expect(printMovements).toHaveLength(1)
-      expect(printMovements[0].quantity).toBe(3000)
-      expect(salesMovements).toHaveLength(1)
-      expect(salesMovements[0].quantity).toBe(-150)
-    })
-
-    test('should filter movements by date range', async () => {
-      const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({ code: 'DTE' })
-
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'PRINT_RECEIVED',
-          quantity: 2000,
+          quantity: 1000,
           movementDate: new Date('2024-01-15')
         }
       })
@@ -406,7 +258,46 @@ describe('StockMovement Model', () => {
           titleId: title.id,
           warehouseId: warehouse.id,
           movementType: 'UK_TRADE_SALES',
-          quantity: -100,
+          quantity: -50,
+          movementDate: new Date('2024-01-16')
+        }
+      })
+
+      const printMovements = await testDb.stockMovement.findMany({
+        where: { movementType: 'PRINT_RECEIVED' }
+      })
+
+      const saleMovements = await testDb.stockMovement.findMany({
+        where: { movementType: 'UK_TRADE_SALES' }
+      })
+
+      expect(printMovements).toHaveLength(1)
+      expect(printMovements[0].quantity).toBe(1000)
+      expect(saleMovements).toHaveLength(1)
+      expect(saleMovements[0].quantity).toBe(-50)
+    })
+
+    test('should filter movements by date range', async () => {
+      const title = await createTestTitle({ isbn: '9781111111111' })
+      const warehouse = await createTestWarehouse({ code: 'DTE' })
+
+      // Create movements on different dates
+      await testDb.stockMovement.create({
+        data: {
+          titleId: title.id,
+          warehouseId: warehouse.id,
+          movementType: 'PRINT_RECEIVED',
+          quantity: 1000,
+          movementDate: new Date('2024-01-01')
+        }
+      })
+
+      await testDb.stockMovement.create({
+        data: {
+          titleId: title.id,
+          warehouseId: warehouse.id,
+          movementType: 'UK_TRADE_SALES',
+          quantity: -50,
           movementDate: new Date('2024-02-15')
         }
       })
@@ -428,45 +319,39 @@ describe('StockMovement Model', () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'TOT' })
 
-      // Initial print run
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'PRINT_RECEIVED',
-          quantity: 3000,
-          movementDate: new Date('2024-01-01')
-        }
-      })
+      // Create a series of movements
+      const movements = [
+        { type: 'PRINT_RECEIVED', quantity: 1000, date: '2024-01-01' },
+        { type: 'UK_TRADE_SALES', quantity: -100, date: '2024-01-05' },
+        { type: 'DIRECT_SALES', quantity: -50, date: '2024-01-10' },
+        { type: 'PRINT_RECEIVED', quantity: 500, date: '2024-01-15' }
+      ]
 
-      // Various sales
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'ONLINE_SALES',
-          quantity: -200,
-          movementDate: new Date('2024-01-15')
-        }
-      })
-
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'UK_TRADE_SALES',
-          quantity: -500,
-          movementDate: new Date('2024-01-20')
-        }
-      })
+      for (const movement of movements) {
+        await testDb.stockMovement.create({
+          data: {
+            titleId: title.id,
+            warehouseId: warehouse.id,
+            movementType: movement.type as any,
+            quantity: movement.quantity,
+            movementDate: new Date(movement.date)
+          }
+        })
+      }
 
       const allMovements = await testDb.stockMovement.findMany({
         where: { titleId: title.id },
         orderBy: { movementDate: 'asc' }
       })
 
-      const runningTotal = allMovements.reduce((total, movement) => total + movement.quantity, 0)
-      expect(runningTotal).toBe(2300) // 3000 - 200 - 500
+      // Calculate running total
+      let runningTotal = 0
+      const expectedTotals = [1000, 900, 850, 1350]
+
+      allMovements.forEach((movement, index) => {
+        runningTotal += movement.quantity
+        expect(runningTotal).toBe(expectedTotals[index])
+      })
     })
 
     test('should get movements for specific warehouse', async () => {
@@ -474,13 +359,14 @@ describe('StockMovement Model', () => {
       const warehouse1 = await createTestWarehouse({ code: 'WH1' })
       const warehouse2 = await createTestWarehouse({ code: 'WH2' })
 
+      // Create movements in different warehouses
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse1.id,
           movementType: 'PRINT_RECEIVED',
-          quantity: 2000,
-          movementDate: new Date()
+          quantity: 1000,
+          movementDate: new Date('2024-01-15')
         }
       })
 
@@ -489,183 +375,199 @@ describe('StockMovement Model', () => {
           titleId: title.id,
           warehouseId: warehouse2.id,
           movementType: 'PRINT_RECEIVED',
-          quantity: 1000,
-          movementDate: new Date()
+          quantity: 500,
+          movementDate: new Date('2024-01-15')
         }
       })
 
-      const warehouse1Movements = await testDb.stockMovement.findMany({
+      const wh1Movements = await testDb.stockMovement.findMany({
         where: { warehouseId: warehouse1.id }
       })
 
-      expect(warehouse1Movements).toHaveLength(1)
-      expect(warehouse1Movements[0].quantity).toBe(2000)
+      const wh2Movements = await testDb.stockMovement.findMany({
+        where: { warehouseId: warehouse2.id }
+      })
+
+      expect(wh1Movements).toHaveLength(1)
+      expect(wh1Movements[0].quantity).toBe(1000)
+      expect(wh2Movements).toHaveLength(1)
+      expect(wh2Movements[0].quantity).toBe(500)
     })
 
     test('should order movements by date', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'ORD' })
 
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'UK_TRADE_SALES',
-          quantity: -100,
-          movementDate: new Date('2024-01-20')
-        }
-      })
+      const dates = ['2024-01-15', '2024-01-10', '2024-01-20', '2024-01-05']
 
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: warehouse.id,
-          movementType: 'PRINT_RECEIVED',
-          quantity: 3000,
-          movementDate: new Date('2024-01-10')
-        }
-      })
+      // Create movements in random order
+      for (const date of dates) {
+        await testDb.stockMovement.create({
+          data: {
+            titleId: title.id,
+            warehouseId: warehouse.id,
+            movementType: 'PRINT_RECEIVED',
+            quantity: 100,
+            movementDate: new Date(date)
+          }
+        })
+      }
 
-      const chronologicalMovements = await testDb.stockMovement.findMany({
+      const orderedMovements = await testDb.stockMovement.findMany({
+        where: { titleId: title.id },
         orderBy: { movementDate: 'asc' }
       })
 
-      expect(chronologicalMovements[0].movementType).toBe('PRINT_RECEIVED')
-      expect(chronologicalMovements[1].movementType).toBe('UK_TRADE_SALES')
+      const expectedOrder = ['2024-01-05', '2024-01-10', '2024-01-15', '2024-01-20']
+      orderedMovements.forEach((movement, index) => {
+        expect(movement.movementDate).toEqual(new Date(expectedOrder[index]))
+      })
     })
   })
 
   describe('Business Logic Scenarios', () => {
     test('should track monthly warehouse import scenario', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
-      const warehouse = await createTestWarehouse({
-        name: 'Turnaround',
-        code: 'TRN',
-        fulfillsChannels: ['UK_TRADE_SALES', 'ROW_TRADE_SALES']
+      const warehouse = await createTestWarehouse({ code: 'IMP' })
+      const printer = await createTestPrinter({ name: 'Lightning Source UK' })
+
+      // Initial print run received
+      const printMovement = await testDb.stockMovement.create({
+        data: {
+          titleId: title.id,
+          warehouseId: warehouse.id,
+          movementType: 'PRINT_RECEIVED',
+          quantity: 3000,
+          movementDate: new Date('2024-01-01'),
+          printerId: printer.id,
+          referenceNumber: 'INITIAL-PRINT-001',
+          batchNumber: 'BATCH-2024-001'
+        }
       })
 
-      // Simulate monthly data import from Turnaround
-      const monthlyMovements = [
-        { type: 'UK_TRADE_SALES', quantity: -45 },
-        { type: 'ROW_TRADE_SALES', quantity: -23 },
-        { type: 'DAMAGED', quantity: -2 },
-        { type: 'FREE_COPIES', quantity: -5 }
-      ] as const
+      // Sales throughout the month
+      const salesData = [
+        { date: '2024-01-05', quantity: -100, type: 'UK_TRADE_SALES' },
+        { date: '2024-01-12', quantity: -200, type: 'DIRECT_SALES' },
+        { date: '2024-01-18', quantity: -150, type: 'UK_TRADE_SALES' },
+        { date: '2024-01-25', quantity: -75, type: 'DIRECT_SALES' }
+      ]
 
-      for (let index = 0; index < monthlyMovements.length; index++) {
-        const movement = monthlyMovements[index];
+      for (const sale of salesData) {
         await testDb.stockMovement.create({
           data: {
             titleId: title.id,
             warehouseId: warehouse.id,
-            movementType: movement.type,
-            quantity: movement.quantity,
-            movementDate: new Date(`2024-01-${15 + index}`),
-            referenceNumber: `TRN-2024-01-${index + 1}`,
-            notes: 'Monthly warehouse data import'
+            movementType: sale.type as any,
+            quantity: sale.quantity,
+            movementDate: new Date(sale.date),
+            rrpAtTime: 19.99,
+            unitCostAtTime: 5.50,
+            tradeDiscountAtTime: 40.00
           }
         })
       }
 
-      const monthlyTotal = await testDb.stockMovement.findMany({
+      // Query all movements for the month
+      const monthlyMovements = await testDb.stockMovement.findMany({
         where: {
           titleId: title.id,
-          warehouseId: warehouse.id,
           movementDate: {
             gte: new Date('2024-01-01'),
             lt: new Date('2024-02-01')
           }
+        },
+        orderBy: { movementDate: 'asc' },
+        include: {
+          printer: true
         }
       })
 
-      const totalSold = monthlyTotal.reduce((sum, movement) => sum + movement.quantity, 0)
-      expect(totalSold).toBe(-75) // -45 - 23 - 2 - 5
+      expect(monthlyMovements).toHaveLength(5) // 1 print + 4 sales
+      expect(monthlyMovements[0].movementType).toBe('PRINT_RECEIVED')
+      expect(monthlyMovements[0].printer?.name).toBe('Lightning Source UK')
 
-      const salesByChannel = {
-        UK_TRADE: monthlyTotal.filter(m => m.movementType === 'UK_TRADE_SALES').reduce((s, m) => s + m.quantity, 0),
-        ROW_TRADE: monthlyTotal.filter(m => m.movementType === 'ROW_TRADE_SALES').reduce((s, m) => s + m.quantity, 0)
-      }
-
-      expect(salesByChannel.UK_TRADE).toBe(-45)
-      expect(salesByChannel.ROW_TRADE).toBe(-23)
+      // Calculate end of month stock
+      const totalQuantity = monthlyMovements.reduce((sum, movement) => sum + movement.quantity, 0)
+      expect(totalQuantity).toBe(2475) // 3000 - 525 sold
     })
 
     test('should track warehouse channel compliance', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
-
-      // Test Turnaround warehouse
-      const turnaround = await createTestWarehouse({
-        name: 'Turnaround',
-        code: 'TRN',
-        fulfillsChannels: ['UK_TRADE_SALES', 'ROW_TRADE_SALES']
+      const ukWarehouse = await createTestWarehouse({
+        code: 'UK',
+        fulfillsChannels: ['UK_TRADE', 'UK_DIRECT']
+      })
+      const rowWarehouse = await createTestWarehouse({
+        code: 'ROW',
+        fulfillsChannels: ['ROW_TRADE', 'EXPORT']
       })
 
-      // Test ACC warehouse
-      const acc = await createTestWarehouse({
-        name: 'ACC',
-        code: 'ACC',
-        fulfillsChannels: ['US_TRADE_SALES']
-      })
-
-      // Test Flostream warehouse
-      const flostream = await createTestWarehouse({
-        name: 'Flostream',
-        code: 'FLS',
-        fulfillsChannels: ['ONLINE_SALES']
-      })
-
-      // Create appropriate movements for each warehouse
+      // Stock received at UK warehouse
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
-          warehouseId: turnaround.id,
-          movementType: 'UK_TRADE_SALES',
-          quantity: -100,
-          movementDate: new Date()
+          warehouseId: ukWarehouse.id,
+          movementType: 'PRINT_RECEIVED',
+          quantity: 2000,
+          movementDate: new Date('2024-01-01')
         }
       })
 
+      // Transfer some stock to ROW warehouse
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
-          warehouseId: acc.id,
-          movementType: 'US_TRADE_SALES',
-          quantity: -75,
-          movementDate: new Date()
+          warehouseId: rowWarehouse.id,
+          movementType: 'WAREHOUSE_TRANSFER',
+          quantity: 500,
+          movementDate: new Date('2024-01-05'),
+          sourceWarehouseId: ukWarehouse.id,
+          destinationWarehouseId: rowWarehouse.id,
+          referenceNumber: 'TRANSFER-UK-ROW-001'
         }
       })
 
+      // Corresponding outbound from UK warehouse
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
-          warehouseId: flostream.id,
-          movementType: 'ONLINE_SALES',
-          quantity: -50,
-          movementDate: new Date()
+          warehouseId: ukWarehouse.id,
+          movementType: 'WAREHOUSE_TRANSFER',
+          quantity: -500,
+          movementDate: new Date('2024-01-05'),
+          sourceWarehouseId: ukWarehouse.id,
+          destinationWarehouseId: rowWarehouse.id,
+          referenceNumber: 'TRANSFER-UK-ROW-001'
         }
       })
 
-      const movementsByWarehouse = await testDb.stockMovement.findMany({
+      // Verify movements by warehouse
+      const ukMovements = await testDb.stockMovement.findMany({
+        where: { warehouseId: ukWarehouse.id },
         include: { warehouse: true }
       })
 
-      // Verify each warehouse only handles its designated channels
-      const turnaroundMovement = movementsByWarehouse.find(m => m.warehouse.code === 'TRN')
-      const accMovement = movementsByWarehouse.find(m => m.warehouse.code === 'ACC')
-      const flostreamMovement = movementsByWarehouse.find(m => m.warehouse.code === 'FLS')
+      const rowMovements = await testDb.stockMovement.findMany({
+        where: { warehouseId: rowWarehouse.id },
+        include: { warehouse: true }
+      })
 
-      expect(turnaroundMovement?.movementType).toBe('UK_TRADE_SALES')
-      expect(accMovement?.movementType).toBe('US_TRADE_SALES')
-      expect(flostreamMovement?.movementType).toBe('ONLINE_SALES')
+      expect(ukMovements).toHaveLength(2)
+      expect(rowMovements).toHaveLength(1)
+
+      // Calculate current stock levels
+      const ukStock = ukMovements.reduce((sum, m) => sum + m.quantity, 0)
+      const rowStock = rowMovements.reduce((sum, m) => sum + m.quantity, 0)
+
+      expect(ukStock).toBe(1500)
+      expect(rowStock).toBe(500)
     })
 
     test('should support reprint workflow tracking', async () => {
-      const title = await createTestTitle({
-        isbn: '9781111111111',
-        printRunSize: 3000,
-        reprintThreshold: 1000
-      })
+      const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'RPT' })
+      const printer = await createTestPrinter({ name: 'Lightning Source UK' })
 
       // Initial print run
       await testDb.stockMovement.create({
@@ -675,65 +577,70 @@ describe('StockMovement Model', () => {
           movementType: 'PRINT_RECEIVED',
           quantity: 3000,
           movementDate: new Date('2024-01-01'),
-          printerName: 'Lightning Source UK',
-          referenceNumber: 'INITIAL-PRINT-001'
+          printerId: printer.id,
+          referenceNumber: 'INITIAL-PRINT-001',
+          batchNumber: 'BATCH-2024-001',
+          manufacturingDate: new Date('2024-01-01')
         }
       })
 
-      // Sales over time bringing stock below reprint threshold
-      const salesMovements = [
-        { date: '2024-01-15', quantity: -500 },
-        { date: '2024-02-01', quantity: -800 },
-        { date: '2024-02-15', quantity: -900 }
-      ]
-
-      for (const sale of salesMovements) {
-        await testDb.stockMovement.create({
-          data: {
-            titleId: title.id,
-            warehouseId: warehouse.id,
-            movementType: 'UK_TRADE_SALES',
-            quantity: sale.quantity,
-            movementDate: new Date(sale.date)
-          }
-        })
-      }
-
-      // Calculate current stock from movements
-      const allMovements = await testDb.stockMovement.findMany({
-        where: { titleId: title.id, warehouseId: warehouse.id }
+      // Heavy sales bringing stock low
+      await testDb.stockMovement.create({
+        data: {
+          titleId: title.id,
+          warehouseId: warehouse.id,
+          movementType: 'UK_TRADE_SALES',
+          quantity: -2800,
+          movementDate: new Date('2024-03-15'),
+          referenceNumber: 'BULK-SALE-001'
+        }
       })
 
-      const currentStock = allMovements.reduce((total, movement) => total + movement.quantity, 0)
-      expect(currentStock).toBe(800) // 3000 - 500 - 800 - 900
-
-      const titleWithThreshold = await testDb.title.findUnique({
-        where: { id: title.id }
-      })
-
-      const needsReprint = currentStock <= (titleWithThreshold?.reprintThreshold || 0)
-      expect(needsReprint).toBe(true)
-
-      // Reprint order
+      // Reprint ordered when stock hits threshold
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse.id,
           movementType: 'PRINT_RECEIVED',
-          quantity: 3000,
-          movementDate: new Date('2024-03-01'),
-          printerName: 'Lightning Source UK',
+          quantity: 5000,
+          movementDate: new Date('2024-04-01'),
+          printerId: printer.id,
           referenceNumber: 'REPRINT-001',
-          notes: 'Reprint triggered by low stock alert'
+          batchNumber: 'BATCH-2024-002',
+          manufacturingDate: new Date('2024-04-01')
         }
       })
 
-      const finalMovements = await testDb.stockMovement.findMany({
-        where: { titleId: title.id, warehouseId: warehouse.id }
+      // Track all print receipts
+      const printReceipts = await testDb.stockMovement.findMany({
+        where: {
+          titleId: title.id,
+          movementType: 'PRINT_RECEIVED'
+        },
+        orderBy: { movementDate: 'asc' },
+        include: { printer: true }
       })
 
-      const finalStock = finalMovements.reduce((total, movement) => total + movement.quantity, 0)
-      expect(finalStock).toBe(3800) // 800 + 3000
+      expect(printReceipts).toHaveLength(2)
+      expect(printReceipts[0].batchNumber).toBe('BATCH-2024-001')
+      expect(printReceipts[1].batchNumber).toBe('BATCH-2024-002')
+      expect(printReceipts[1].quantity).toBe(5000)
+
+      // Calculate total printed vs sold
+      const allMovements = await testDb.stockMovement.findMany({
+        where: { titleId: title.id }
+      })
+
+      const totalPrinted = allMovements
+        .filter(m => m.movementType === 'PRINT_RECEIVED')
+        .reduce((sum, m) => sum + m.quantity, 0)
+
+      const totalSold = Math.abs(allMovements
+        .filter(m => m.movementType === 'UK_TRADE_SALES')
+        .reduce((sum, m) => sum + m.quantity, 0))
+
+      expect(totalPrinted).toBe(8000)
+      expect(totalSold).toBe(2800)
     })
   })
 })

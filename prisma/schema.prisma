@@ -205,6 +205,14 @@ model StockMovement {
   printerId             Int?         @map("printer_id")
   referenceNumber       String?      @db.VarChar(100) @map("reference_number")
   notes                 String?      @db.Text
+
+  // Batch/Lot Tracking Fields for Publisher Shipments
+  batchNumber           String?      @db.VarChar(100) @map("batch_number")    // Publisher shipment batch
+  lotId                 String?      @db.VarChar(50) @map("lot_id")           // Print run lot identifier
+  expiryDate            DateTime?    @map("expiry_date")                      // For time-sensitive items
+  manufacturingDate     DateTime?    @map("manufacturing_date")               // Print/production date
+  supplierBatchRef      String?      @db.VarChar(100) @map("supplier_batch_ref") // External batch reference
+
   createdAt             DateTime     @default(now()) @map("created_at")
   updatedAt             DateTime     @updatedAt @map("updated_at")
 
@@ -224,6 +232,10 @@ model StockMovement {
   @@index([destinationWarehouseId])
   @@index([printerId])
   @@index([rrpAtTime])
+  @@index([batchNumber])
+  @@index([lotId])
+  @@index([expiryDate])
+  @@index([manufacturingDate])
 }
 
 enum Format {

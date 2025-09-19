@@ -40,17 +40,19 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
    - ✅ Design location-specific inventory attributes
    - **Completion Notes:** Enhanced Inventory model with comprehensive tracking capabilities. Added cost basis fields (averageCost, totalValue, lastCostUpdate) and location-specific attributes (binLocation, minStockLevel, maxStockLevel, reorderPoint). Database migration successfully applied adding all new fields with proper indexing. Supports multi-warehouse inventory management with unique title-warehouse constraints and complete audit trails.
 
-1.5 **Implement stock movement transaction system**
-   - Create StockMovement model for all inventory transactions
-   - Design movement types (receipt, sale, transfer, adjustment)
-   - Implement transaction logging with reference traceability
-   - Add batch/lot tracking for publisher shipments
+1.5 **[x] Implement stock movement transaction system** ✅ COMPLETED
+   - ✅ Create StockMovement model for all inventory transactions
+   - ✅ Design movement types (receipt, sale, transfer, adjustment)
+   - ✅ Implement transaction logging with reference traceability
+   - ✅ Add batch/lot tracking for publisher shipments
+   - **Completion Notes:** StockMovement model fully implemented with comprehensive transaction logging, financial snapshots, and complete batch/lot tracking for publisher shipments. Added batchNumber, lotId, expiryDate, manufacturingDate, and supplierBatchRef fields with proper indexing. Database migration successfully applied with all fields and indexes created.
 
-1.6 **Set up database migrations and seed data**
-   - Create initial migration files for all models
-   - Develop seed data for test warehouses and sample titles
-   - Implement database reset and rollback procedures
-   - Set up foreign key constraints and indexes
+1.6 **[x] Set up database migrations and seed data** ✅ COMPLETED
+   - ✅ Create initial migration files for all models
+   - ✅ Develop seed data for test warehouses and sample titles
+   - ✅ Implement database reset and rollback procedures
+   - ✅ Set up foreign key constraints and indexes
+   - **Completion Notes:** Complete database setup infrastructure implemented. Migration files created for all models with proper foreign key constraints and performance indexes. Comprehensive seed data with 3 warehouses (Turnaround UK, ACC US, Flostream UK), 3 printers, 2 series, sample titles with full publishing metadata, price history, inventory records, and stock movements. Database reset (`npm run db:reset`) and rollback (`npm run db:rollback`) procedures implemented with safety checks and environment-specific handling.
 
 1.7 **Verify all database tests pass**
    - Run complete test suite for schema validation
