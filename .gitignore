@@ -14,12 +14,20 @@ pids
 *.seed
 *.pid.lock
 
-# Environment variables
+# Environment variables - CRITICAL: Contains database passwords, API keys
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+*.env
+
+# Additional security - Database and API secrets
+config/database.yml
+config/secrets.yml
+config/master.key
+.env.vault
 
 # Logs
 npm-debug.log*
@@ -67,8 +75,35 @@ coverage/
 # nyc test coverage
 .nyc_output
 
-# Prisma
-prisma/migrations/
+# Prisma - Keep migrations but protect local dev data
+# prisma/migrations/ - We actually WANT to commit migrations
+prisma/dev.db
+prisma/dev.db-journal
+*.db
+*.db-journal
+
+# Docker secrets and data
+docker-compose.override.yml
+.docker/
+docker/secrets/
+
+# Cloud provider secrets
+.aws/
+.gcp/
+.azure/
+
+# API keys and auth
+*.pem
+*.key
+*.p8
+*.p12
+*.crt
+auth.json
+service-account.json
+
+# BookStock specific secrets
+/config/clerk.json
+/config/database.json
 
 # Temporary folders
 tmp/

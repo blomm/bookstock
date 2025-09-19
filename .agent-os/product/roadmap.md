@@ -7,11 +7,11 @@
 
 ### Features
 
-- [ ] Title Management System - Create, edit, and manage book catalog with ISBN, author, format, RRP, unit cost `M`
-- [ ] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S`
-- [ ] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
+- [x] Title Management System - Create, edit, and manage book catalog with ISBN, author, format, RRP, unit cost `M`
+- [x] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S`
+- [x] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
 - [ ] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
-- [ ] Series Management - Group titles by series (e.g., "Opinionated Guides") `S`
+- [x] Series Management - Group titles by series (e.g., "Opinionated Guides") `S`
 - [ ] User Authentication - Secure login system with role-based access control `M`
 
 ### Dependencies
@@ -31,7 +31,7 @@
 - [ ] Profit Calculation Engine - Automated profit tracking using (RRP/2 - unit cost) × sales `M`
 - [ ] Financial Dashboard - Real-time profitability overview across all titles `L`
 - [ ] Historical Sales Analysis - Track monthly, 12-month, YTD, and lifetime sales `M`
-- [ ] Cost Management - Track and update unit costs per title `S`
+- [x] Cost Management - Track and update unit costs per title `S`
 - [ ] Damage Tracking - Record and analyze damaged inventory losses `S`
 
 ### Dependencies
