@@ -10,7 +10,7 @@
 - [x] Title Management System - Create, edit, and manage book catalog with ISBN, author, format, RRP, unit cost `M`
 - [x] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S`
 - [x] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
-- [ ] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
+- [x] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
 - [x] Series Management - Group titles by series (e.g., "Opinionated Guides") `S`
 - [ ] User Authentication - Secure login system with role-based access control `M`
 

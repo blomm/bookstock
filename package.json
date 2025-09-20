@@ -19,6 +19,7 @@
     "db:reset:test": "tsx scripts/db-reset.ts test",
     "db:reset:prod": "tsx scripts/db-reset.ts prod",
     "db:rollback": "tsx scripts/db-rollback.ts",
+    "db:performance": "tsx scripts/db-performance-test.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",

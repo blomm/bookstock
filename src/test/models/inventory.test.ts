@@ -232,7 +232,7 @@ describe('Inventory Model', () => {
       expect(inventoryWithRelations?.warehouse.name).toBe('Test Warehouse')
     })
 
-    test('should handle cascade deletion from title', async () => {
+    test('should prevent deletion of title with inventory records', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'CAS' })
 
@@ -244,19 +244,20 @@ describe('Inventory Model', () => {
         }
       })
 
-      // Deleting title should cascade delete inventory
-      await testDb.title.delete({
-        where: { id: title.id }
-      })
+      // Should fail to delete title due to foreign key constraint
+      await expect(
+        testDb.title.delete({ where: { id: title.id } })
+      ).rejects.toThrow()
 
+      // Verify inventory still exists
       const remainingInventory = await testDb.inventory.findMany({
         where: { titleId: title.id }
       })
 
-      expect(remainingInventory).toHaveLength(0)
+      expect(remainingInventory).toHaveLength(1)
     })
 
-    test('should handle cascade deletion from warehouse', async () => {
+    test('should prevent deletion of warehouse with inventory records', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'WHC' })
 
@@ -268,16 +269,17 @@ describe('Inventory Model', () => {
         }
       })
 
-      // Deleting warehouse should cascade delete inventory
-      await testDb.warehouse.delete({
-        where: { id: warehouse.id }
-      })
+      // Should fail to delete warehouse due to foreign key constraint
+      await expect(
+        testDb.warehouse.delete({ where: { id: warehouse.id } })
+      ).rejects.toThrow()
 
+      // Verify inventory still exists
       const remainingInventory = await testDb.inventory.findMany({
         where: { warehouseId: warehouse.id }
       })
 
-      expect(remainingInventory).toHaveLength(0)
+      expect(remainingInventory).toHaveLength(1)
     })
   })
 

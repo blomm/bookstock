@@ -108,7 +108,7 @@ model Title {
 
   // Relationships
   seriesId        Int?      @map("series_id")
-  series          Series?   @relation(fields: [seriesId], references: [id])
+  series          Series?   @relation(fields: [seriesId], references: [id], onDelete: Restrict)
   inventory       Inventory[]
   stockMovements  StockMovement[]
   priceHistory    PriceHistory[]
@@ -152,8 +152,8 @@ model Inventory {
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
   // Relationships
-  title              Title     @relation(fields: [titleId], references: [id])
-  warehouse          Warehouse @relation(fields: [warehouseId], references: [id])
+  title              Title     @relation(fields: [titleId], references: [id], onDelete: Restrict)
+  warehouse          Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
 
   @@unique([titleId, warehouseId])
   @@map("inventory")
@@ -178,7 +178,7 @@ model PriceHistory {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relationships
-  title           Title    @relation(fields: [titleId], references: [id])
+  title           Title    @relation(fields: [titleId], references: [id], onDelete: Cascade)
 
   @@map("price_history")
   @@index([titleId])
@@ -217,11 +217,11 @@ model StockMovement {
   updatedAt             DateTime     @updatedAt @map("updated_at")
 
   // Relationships
-  title                 Title        @relation(fields: [titleId], references: [id])
-  warehouse             Warehouse    @relation("WarehouseMovements", fields: [warehouseId], references: [id])
-  sourceWarehouse       Warehouse?   @relation("SourceWarehouse", fields: [sourceWarehouseId], references: [id])
-  destinationWarehouse  Warehouse?   @relation("DestinationWarehouse", fields: [destinationWarehouseId], references: [id])
-  printer               Printer?     @relation(fields: [printerId], references: [id])
+  title                 Title        @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  warehouse             Warehouse    @relation("WarehouseMovements", fields: [warehouseId], references: [id], onDelete: Cascade)
+  sourceWarehouse       Warehouse?   @relation("SourceWarehouse", fields: [sourceWarehouseId], references: [id], onDelete: SetNull)
+  destinationWarehouse  Warehouse?   @relation("DestinationWarehouse", fields: [destinationWarehouseId], references: [id], onDelete: SetNull)
+  printer               Printer?     @relation(fields: [printerId], references: [id], onDelete: SetNull)
 
   @@map("stock_movements")
   @@index([titleId])

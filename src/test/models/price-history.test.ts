@@ -27,9 +27,9 @@ describe('PriceHistory Model', () => {
       })
 
       expect(priceHistory.titleId).toBe(title.id)
-      expect(priceHistory.rrp).toEqual(new Decimal('29.99'))
-      expect(priceHistory.unitCost).toEqual(new Decimal('8.75'))
-      expect(priceHistory.tradeDiscount).toEqual(new Decimal('45.0'))
+      expect(priceHistory.rrp.toNumber()).toBe(29.99)
+      expect(priceHistory.unitCost?.toNumber()).toBe(8.75)
+      expect(priceHistory.tradeDiscount?.toNumber()).toBe(45.0)
       expect(priceHistory.effectiveFrom).toEqual(new Date('2024-01-01'))
       expect(priceHistory.effectiveTo).toEqual(new Date('2024-06-01'))
       expect(priceHistory.reason).toBe('Launch price')
@@ -50,7 +50,7 @@ describe('PriceHistory Model', () => {
       })
 
       expect(priceHistory.effectiveTo).toBeNull()
-      expect(priceHistory.rrp).toEqual(new Decimal('34.99'))
+      expect(priceHistory.rrp.toNumber()).toBe(34.99)
     })
 
     test('should enforce unique constraint on titleId and effectiveFrom', async () => {
@@ -174,7 +174,7 @@ describe('PriceHistory Model', () => {
         }
       })
 
-      expect(currentPrice?.rrp).toEqual(new Decimal('34.99'))
+      expect(currentPrice?.rrp.toNumber()).toBe(34.99)
       expect(currentPrice?.reason).toBe('Current price')
     })
 
@@ -207,7 +207,7 @@ describe('PriceHistory Model', () => {
         orderBy: { effectiveFrom: 'desc' }
       })
 
-      expect(priceAtDate?.rrp).toEqual(new Decimal('29.99'))
+      expect(priceAtDate?.rrp.toNumber()).toBe(29.99)
     })
 
     test('should order price history chronologically', async () => {
@@ -240,9 +240,9 @@ describe('PriceHistory Model', () => {
       })
 
       expect(priceHistory).toHaveLength(3)
-      expect(priceHistory[0].rrp).toEqual(new Decimal('25.99'))
-      expect(priceHistory[1].rrp).toEqual(new Decimal('29.99'))
-      expect(priceHistory[2].rrp).toEqual(new Decimal('34.99'))
+      expect(priceHistory[0].rrp.toNumber()).toBe(25.99)
+      expect(priceHistory[1].rrp.toNumber()).toBe(29.99)
+      expect(priceHistory[2].rrp.toNumber()).toBe(34.99)
     })
   })
 
@@ -328,7 +328,7 @@ describe('PriceHistory Model', () => {
         orderBy: { effectiveFrom: 'desc' }
       })
 
-      expect(holidayPrice?.rrp).toEqual(new Decimal('19.99'))
+      expect(holidayPrice?.rrp.toNumber()).toBe(19.99)
       expect(holidayPrice?.reason).toContain('Holiday promotion')
     })
 
@@ -343,9 +343,9 @@ describe('PriceHistory Model', () => {
         effectiveFrom: new Date('2024-01-01')
       })
 
-      expect(priceHistory.rrp).toEqual(new Decimal('999999.99'))
-      expect(priceHistory.unitCost).toEqual(new Decimal('999999.99'))
-      expect(priceHistory.tradeDiscount).toEqual(new Decimal('999.99'))
+      expect(priceHistory.rrp.toNumber()).toBe(999999.99)
+      expect(priceHistory.unitCost?.toNumber()).toBe(999999.99)
+      expect(priceHistory.tradeDiscount?.toNumber()).toBe(999.99)
     })
   })
 

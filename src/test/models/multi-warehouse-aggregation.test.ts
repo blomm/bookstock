@@ -240,27 +240,29 @@ describe('Multi-Warehouse Inventory Aggregation', () => {
         data: { titleId: title.id, warehouseId: usWarehouse.id, currentStock: 0, reservedStock: 0 }
       })
 
-      // Record transfer movement
-      await testDb.stockMovement.create({
-        data: {
-          titleId: title.id,
-          warehouseId: usWarehouse.id,
-          movementType: 'WAREHOUSE_TRANSFER',
-          quantity: 200,
-          movementDate: new Date(),
-          sourceWarehouseId: ukWarehouse.id,
-          destinationWarehouseId: usWarehouse.id
-        }
-      })
+      const transferDate = new Date()
 
-      // Record corresponding outbound movement from UK
+      // Record corresponding outbound movement from UK (first chronologically)
       await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: ukWarehouse.id,
           movementType: 'WAREHOUSE_TRANSFER',
           quantity: -200,
-          movementDate: new Date(),
+          movementDate: transferDate,
+          sourceWarehouseId: ukWarehouse.id,
+          destinationWarehouseId: usWarehouse.id
+        }
+      })
+
+      // Record inbound movement to US (second chronologically)
+      await testDb.stockMovement.create({
+        data: {
+          titleId: title.id,
+          warehouseId: usWarehouse.id,
+          movementType: 'WAREHOUSE_TRANSFER',
+          quantity: 200,
+          movementDate: new Date(transferDate.getTime() + 1000), // 1 second later
           sourceWarehouseId: ukWarehouse.id,
           destinationWarehouseId: usWarehouse.id
         }

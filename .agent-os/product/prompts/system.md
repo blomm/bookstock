@@ -1,0 +1,2 @@
+# Always-on rules
+- When the user’s attention is required (blocking question, confirmation needed, or action failed), include the metadata `attention: "chime"` and, in the text, include the token `<chime/>` exactly once at the top of the message.

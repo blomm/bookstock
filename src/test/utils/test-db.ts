@@ -11,30 +11,30 @@ export const testDb = new PrismaClient({
 
 // Helper function to clean up database between tests
 export async function cleanDatabase() {
-  // Delete in reverse order to handle foreign key constraints
-  await testDb.stockMovement.deleteMany()
-  await testDb.inventory.deleteMany()
-  await testDb.priceHistory.deleteMany()
-  await testDb.title.deleteMany()
-  await testDb.series.deleteMany()
-  await testDb.warehouse.deleteMany()
-  await testDb.printer.deleteMany()
+  // Use a transaction to ensure atomicity and handle foreign key constraints
+  await testDb.$transaction(async (prisma) => {
+    // Delete in correct order to handle foreign key constraints
+    await prisma.stockMovement.deleteMany()
+    await prisma.inventory.deleteMany()
+    await prisma.priceHistory.deleteMany()
+    await prisma.title.deleteMany()
+    await prisma.series.deleteMany()
+    await prisma.warehouse.deleteMany()
+    await prisma.printer.deleteMany()
+  })
 
   // Reset ID sequences to avoid conflicts
   try {
-    await testDb.$executeRaw`ALTER SEQUENCE titles_id_seq RESTART WITH 1`
-    await testDb.$executeRaw`ALTER SEQUENCE series_id_seq RESTART WITH 1`
-    await testDb.$executeRaw`ALTER SEQUENCE warehouses_id_seq RESTART WITH 1`
-    await testDb.$executeRaw`ALTER SEQUENCE printers_id_seq RESTART WITH 1`
-    await testDb.$executeRaw`ALTER SEQUENCE inventory_id_seq RESTART WITH 1`
-    await testDb.$executeRaw`ALTER SEQUENCE price_history_id_seq RESTART WITH 1`
-    await testDb.$executeRaw`ALTER SEQUENCE stock_movements_id_seq RESTART WITH 1`
+    await testDb.$executeRaw`TRUNCATE TABLE stock_movements RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE inventory RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE price_history RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE titles RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE series RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE warehouses RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE printers RESTART IDENTITY CASCADE`
   } catch (error) {
-    console.warn('Could not reset sequences:', error)
+    console.warn('Could not truncate tables:', error)
   }
-
-  // Reset test counter for each cleanup
-  testCounter = 0
 }
 
 // Helper function to disconnect from database
@@ -42,14 +42,16 @@ export async function disconnectTestDb() {
   await testDb.$disconnect()
 }
 
-// Test data factories with unique identifiers
-let testCounter = 0;
+// Test data factories with unique identifiers using timestamp and random
+function generateUniqueId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
 
 export const createTestSeries = async (data?: Partial<any>) => {
-  testCounter++;
+  const uniqueId = generateUniqueId()
   return await testDb.series.create({
     data: {
-      name: `Test Series ${testCounter}`,
+      name: `Test Series ${uniqueId}`,
       description: data?.description || null,
       ...data
     }
@@ -57,11 +59,11 @@ export const createTestSeries = async (data?: Partial<any>) => {
 }
 
 export const createTestWarehouse = async (data?: Partial<any>) => {
-  testCounter++;
+  const uniqueId = generateUniqueId()
   return await testDb.warehouse.create({
     data: {
-      name: `Test Warehouse ${testCounter}`,
-      code: `TS${testCounter}`,
+      name: `Test Warehouse ${uniqueId}`,
+      code: data?.code || `TS${uniqueId.substr(0, 8)}`,
       location: 'UK',
       fulfillsChannels: ['ONLINE_SALES'],
       ...data
@@ -70,13 +72,13 @@ export const createTestWarehouse = async (data?: Partial<any>) => {
 }
 
 export const createTestTitle = async (data?: Partial<any>) => {
-  testCounter++;
-  const isbn = data?.isbn || `978123456789${String(testCounter).padStart(1, '0')}`
+  const uniqueId = generateUniqueId()
+  const isbn = data?.isbn || `978${uniqueId.replace(/-/g, '').substr(0, 10)}`
 
   return await testDb.title.create({
     data: {
       isbn,
-      title: `Test Book ${testCounter}`,
+      title: `Test Book ${uniqueId}`,
       author: 'Test Author',
       format: 'PAPERBACK',
       rrp: 19.99,
@@ -87,10 +89,10 @@ export const createTestTitle = async (data?: Partial<any>) => {
 }
 
 export const createTestPrinter = async (data?: Partial<any>) => {
-  testCounter++;
+  const uniqueId = generateUniqueId()
   return await testDb.printer.create({
     data: {
-      name: `Test Printer ${testCounter}`,
+      name: `Test Printer ${uniqueId}`,
       code: data?.code || null,
       ...data
     }
