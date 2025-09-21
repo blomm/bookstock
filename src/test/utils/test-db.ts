@@ -14,6 +14,8 @@ export async function cleanDatabase() {
   // Use a transaction to ensure atomicity and handle foreign key constraints
   await testDb.$transaction(async (prisma) => {
     // Delete in correct order to handle foreign key constraints
+    await prisma.notificationLog.deleteMany()
+    await prisma.titleStatusHistory.deleteMany()
     await prisma.stockMovement.deleteMany()
     await prisma.inventory.deleteMany()
     await prisma.priceHistory.deleteMany()
@@ -25,6 +27,8 @@ export async function cleanDatabase() {
 
   // Reset ID sequences to avoid conflicts
   try {
+    await testDb.$executeRaw`TRUNCATE TABLE notification_log RESTART IDENTITY CASCADE`
+    await testDb.$executeRaw`TRUNCATE TABLE title_status_history RESTART IDENTITY CASCADE`
     await testDb.$executeRaw`TRUNCATE TABLE stock_movements RESTART IDENTITY CASCADE`
     await testDb.$executeRaw`TRUNCATE TABLE inventory RESTART IDENTITY CASCADE`
     await testDb.$executeRaw`TRUNCATE TABLE price_history RESTART IDENTITY CASCADE`
@@ -95,6 +99,19 @@ export const createTestPrinter = async (data?: Partial<any>) => {
       name: `Test Printer ${uniqueId}`,
       code: data?.code || null,
       ...data
+    }
+  })
+}
+
+export const createTestInventory = async (data?: Partial<any>) => {
+  const { quantityOnHand, quantityReserved, ...otherData } = data || {}
+  return await testDb.inventory.create({
+    data: {
+      titleId: 1, // Will be overridden by data
+      warehouseId: 1, // Will be overridden by data
+      currentStock: quantityOnHand || 0,
+      reservedStock: quantityReserved || 0,
+      ...otherData
     }
   })
 }

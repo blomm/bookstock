@@ -1,0 +1,1 @@
+- add to memory "always play a chime sound on my computer when you need my response, for example when my attention is required (blocking question, confirmation needed, or action failed). Or when you need to ask my permission to proceed and I need to reply yes or no."

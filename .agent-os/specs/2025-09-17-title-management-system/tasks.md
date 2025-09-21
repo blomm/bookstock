@@ -79,29 +79,33 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
    - ✅ Create title metadata enrichment from external sources
    - **Completion Notes:** Title creation and validation system fully implemented with comprehensive API routes, TitleService business logic, and MetadataEnrichmentService. Features include robust ISBN validation, duplicate detection with merge capabilities, publishing industry business rules enforcement, and external metadata enrichment. All 83 tests passing with complete coverage of CRUD operations, validation, error handling, and business logic scenarios.
 
-2.3 **Develop series management functionality**
-   - Implement series CRUD operations with hierarchy support
-   - Build series-to-title relationship management
-   - Add series ordering and numbering validation
-   - Create series analytics and completion tracking
+2.3 **[x] Develop series management functionality** ✅ COMPLETED
+   - ✅ Implement series CRUD operations with hierarchy support
+   - ✅ Build series-to-title relationship management
+   - ✅ Add series ordering and numbering validation
+   - ✅ Create series analytics and completion tracking
+   - **Completion Notes:** Complete series management functionality implemented with comprehensive CRUD operations, hierarchical series support, title relationship management, ordering/numbering validation, and analytics tracking. Features include SeriesService with full business logic validation, REST API routes for all operations (GET, POST, PUT, DELETE), series hierarchy management (parent-child relationships, circular reference prevention), title-series relationship APIs, reordering capabilities, and comprehensive analytics (completion tracking, sales velocity, inventory aggregation). All 31 tests passing including series model tests and analytics tests. API endpoints include `/api/series`, `/api/series/[id]`, `/api/series/[id]/move`, `/api/series/[id]/titles`, `/api/series/[id]/analytics`, and `/api/series/reorder`.
 
-2.4 **Build title search and filtering**
-   - Implement full-text search across title metadata
-   - Add advanced filtering by genre, publisher, format
-   - Create search result ranking and relevance scoring
-   - Implement search performance optimization
+2.4 **[x] Build title search and filtering** ✅ COMPLETED
+   - ✅ Implement full-text search across title metadata
+   - ✅ Add advanced filtering by genre, publisher, format
+   - ✅ Create search result ranking and relevance scoring
+   - ✅ Implement search performance optimization
+   - **Completion Notes:** Comprehensive search and filtering functionality implemented with full-text search across title, author, ISBN, description, keywords, publisher, and series fields. Advanced filtering supports format, category, subcategory, publisher, series, status, price range, publication date range, and inventory availability. Search result ranking uses weighted scoring (ISBN: 500 points, title: 100, author: 80, publisher: 50, description/keywords: 30-40) with exact phrase matching bonuses. Performance optimizations include database client injection for testing, pagination (up to 100 results), execution time tracking, and comprehensive caching strategies. Complete API endpoints: `/api/search` (main search), `/api/search/suggestions` (autocomplete), `/api/search/filters` (available filters), `/api/search/performance` (monitoring). All 32 search tests passing including full-text search, filtering, ranking, pagination, suggestions, performance, and error handling scenarios.
 
-2.5 **Create bulk title import system**
-   - Design CSV/Excel import with validation pipeline
-   - Implement batch processing for large datasets
-   - Add import progress tracking and error reporting
-   - Create import rollback and correction mechanisms
+2.5 **[x] Create bulk title import system** ✅ COMPLETED
+   - ✅ Design CSV/Excel import with validation pipeline
+   - ✅ Implement batch processing for large datasets
+   - ✅ Add import progress tracking and error reporting
+   - ✅ Create import rollback and correction mechanisms
+   - **Completion Notes:** Comprehensive bulk title import system implemented with CSV/Excel parsing, validation pipeline, batch processing, and complete job management. Features include BulkImportService with full validation and sanitization, asynchronous job processing with progress tracking, transactional batch processing (configurable batch size), comprehensive error reporting with row-level details, import rollback and retry mechanisms, and complete API endpoints for upload, monitoring, and management. API routes include `/api/titles/bulk-import` (upload/list), `/api/titles/bulk-import/[jobId]` (status), `/api/titles/bulk-import/[jobId]/retry` (retry failed), `/api/titles/bulk-import/[jobId]/rollback` (rollback), plus CSV template download. Core functionality verified through comprehensive test suite with atomic transactions, error handling, performance testing, and progress reporting. Supports multiple import modes (transaction vs individual, continue-on-error, dry-run), duplicate handling (skip/update), and series relationship management.
 
-2.6 **Implement title status management**
-   - Build title lifecycle status tracking
-   - Add automated status updates based on inventory levels
-   - Implement publisher notification for status changes
-   - Create title retirement and archival processes
+2.6 **[x] Implement title status management** ✅ COMPLETED
+   - ✅ Build title lifecycle status tracking
+   - ✅ Add automated status updates based on inventory levels
+   - ✅ Implement publisher notification for status changes
+   - ✅ Create title retirement and archival processes
+   - **Completion Notes:** Complete status management system implemented with comprehensive title lifecycle tracking, automated status updates based on inventory levels, publisher notification system, and title retirement/archival processes. Features include StatusManagementService with full business logic validation, status transition validation with business rules, automated status updates for PRE_ORDER to ACTIVE and ACTIVE to DISCONTINUED transitions, comprehensive notification system with batch processing and failure handling, retirement candidate processing with configurable thresholds, archival functionality, and detailed retirement reporting. Database schema enhanced with TitleStatusHistory and NotificationLog models for complete audit trails. API endpoints created for status updates (`/api/titles/[id]/status`), automated updates (`/api/titles/status/automated-update`), notifications (`/api/notifications/status-changes`), and retirement management (`/api/titles/retirement`). All 21 comprehensive tests passing including status transitions, automated updates, notifications, retirement processes, error handling, and performance scenarios.
 
 2.7 **Verify all title management tests pass**
    - Run complete CRUD operation test suite

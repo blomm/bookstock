@@ -1,133 +1,59 @@
 import { describe, test, expect, beforeEach, afterAll } from 'vitest'
 import { testDb, cleanDatabase, disconnectTestDb, createTestSeries } from '../utils/test-db'
+import {
+  createImportJob,
+  getImportJob,
+  setDbClient,
+  validateTitleData,
+  TitleImportData,
+  ImportOptions,
+  ImportResult
+} from '@/services/bulkImportService'
 
-// Bulk import utility types
-interface ImportResult {
-  success: boolean
-  created?: any[]
-  errors?: ImportError[]
-  summary?: {
-    total: number
-    successful: number
-    failed: number
-    duration: number
-  }
-}
-
-interface ImportError {
-  row: number
-  isbn?: string
-  title?: string
-  error: string
-  data: any
-}
-
-// Bulk import simulation functions
-async function simulateBulkImport(titleData: any[], options: {
-  useTransaction?: boolean
-  validateFirst?: boolean
-  continueOnError?: boolean
-} = {}): Promise<ImportResult> {
+// Helper function to wait for import job completion
+async function waitForJobCompletion(jobId: string, maxWaitTime = 30000): Promise<ImportResult> {
   const startTime = Date.now()
-  const results = []
-  const errors = []
 
-  if (options.useTransaction) {
-    // Atomic transaction - all or nothing
-    try {
-      const createdTitles = await testDb.$transaction(
-        titleData.map(data => testDb.title.create({ data }))
-      )
+  while (Date.now() - startTime < maxWaitTime) {
+    const job = getImportJob(jobId)
+    if (!job) throw new Error('Job not found')
+
+    if (job.status === 'completed' || job.status === 'failed') {
       return {
-        success: true,
-        created: createdTitles,
+        success: job.status === 'completed',
+        created: job.created,
+        errors: job.errors,
         summary: {
-          total: titleData.length,
-          successful: createdTitles.length,
-          failed: 0,
-          duration: Date.now() - startTime
-        }
-      }
-    } catch (error) {
-      return {
-        success: false,
-        errors: [{
-          row: -1,
-          error: error.message,
-          data: titleData
-        }],
-        summary: {
-          total: titleData.length,
-          successful: 0,
-          failed: titleData.length,
-          duration: Date.now() - startTime
-        }
-      }
-    }
-  } else {
-    // Individual processing with error capture
-    for (let i = 0; i < titleData.length; i++) {
-      const data = titleData[i]
-      try {
-        const title = await testDb.title.create({ data })
-        results.push(title)
-      } catch (error) {
-        errors.push({
-          row: i + 1,
-          isbn: data.isbn,
-          title: data.title,
-          error: error.message,
-          data
-        })
-
-        if (!options.continueOnError) {
-          break
+          total: job.summary.total,
+          successful: job.summary.successful,
+          failed: job.summary.failed,
+          duration: job.summary.duration
         }
       }
     }
 
-    return {
-      success: errors.length === 0,
-      created: results,
-      errors,
-      summary: {
-        total: titleData.length,
-        successful: results.length,
-        failed: errors.length,
-        duration: Date.now() - startTime
-      }
-    }
+    // Wait 100ms before checking again
+    await new Promise(resolve => setTimeout(resolve, 100))
   }
+
+  throw new Error('Job did not complete within timeout')
 }
 
-function validateTitleData(data: any): string[] {
-  const errors = []
+// Bulk import using actual service
+async function simulateBulkImport(titleData: TitleImportData[], options: ImportOptions = {}): Promise<ImportResult> {
+  const jobId = await createImportJob(titleData, options)
+  return await waitForJobCompletion(jobId)
+}
 
-  if (!data.isbn) errors.push('ISBN is required')
-  if (!data.title) errors.push('Title is required')
-  if (!data.author) errors.push('Author is required')
-  if (!data.format) errors.push('Format is required')
-  if (typeof data.rrp !== 'number' || data.rrp <= 0) errors.push('RRP must be a positive number')
-  if (typeof data.unitCost !== 'number' || data.unitCost <= 0) errors.push('Unit cost must be a positive number')
-
-  // ISBN format validation
-  if (data.isbn) {
-    const cleanISBN = data.isbn.replace(/[-\s]/g, '')
-    if (!/^\d+$/.test(cleanISBN) || (cleanISBN.length !== 10 && cleanISBN.length !== 13)) {
-      errors.push('ISBN must be 10 or 13 digits')
-    }
-  }
-
-  // Format validation
-  if (data.format && !['HARDCOVER', 'PAPERBACK', 'DIGITAL', 'AUDIOBOOK'].includes(data.format)) {
-    errors.push('Format must be one of: HARDCOVER, PAPERBACK, DIGITAL, AUDIOBOOK')
-  }
-
-  return errors
+// Use the service validation function
+function validateTitleDataLocal(data: any): string[] {
+  const errors = validateTitleData(data, 1) // Row 1 for testing
+  return errors.map(error => error.error)
 }
 
 describe('Title Bulk Import', () => {
   beforeEach(async () => {
+    setDbClient(testDb)
     await cleanDatabase()
   })
 
@@ -165,7 +91,7 @@ describe('Title Bulk Import', () => {
         }
       ]
 
-      const result = await simulateBulkImport(titleData, { useTransaction: true })
+      const result = await simulateBulkImport(titleData, { useTransaction: true, validateFirst: false })
 
       expect(result.success).toBe(true)
       expect(result.created).toHaveLength(3)
@@ -334,7 +260,7 @@ describe('Title Bulk Import', () => {
       ]
 
       invalidData.forEach((data, index) => {
-        const errors = validateTitleData(data)
+        const errors = validateTitleDataLocal(data)
         expect(errors.length).toBeGreaterThan(0)
       })
     })
@@ -460,7 +386,7 @@ describe('Title Bulk Import', () => {
       ]
 
       titleData.forEach(data => {
-        const errors = validateTitleData(data)
+        const errors = validateTitleDataLocal(data)
         expect(errors).toContain('ISBN must be 10 or 13 digits')
       })
     })
@@ -477,7 +403,7 @@ describe('Title Bulk Import', () => {
         }
       ]
 
-      const errors = validateTitleData(titleData[0])
+      const errors = validateTitleDataLocal(titleData[0])
       expect(errors).toContain('Format must be one of: HARDCOVER, PAPERBACK, DIGITAL, AUDIOBOOK')
     })
 
@@ -493,7 +419,7 @@ describe('Title Bulk Import', () => {
         }
       ]
 
-      const errors = validateTitleData(titleData[0])
+      const errors = validateTitleDataLocal(titleData[0])
       expect(errors).toContain('RRP must be a positive number')
       expect(errors).toContain('Unit cost must be a positive number')
     })
@@ -707,7 +633,7 @@ describe('Title Bulk Import', () => {
         .map((data, index) => ({
           row: index + 1,
           data,
-          errors: validateTitleData(data)
+          errors: validateTitleDataLocal(data)
         }))
         .filter(item => item.errors.length > 0)
 

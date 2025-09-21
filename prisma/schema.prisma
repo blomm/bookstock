@@ -14,14 +14,24 @@ model Series {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(255)
   description String?  @db.Text
+  parentId    Int?     @map("parent_id")
+  sortOrder   Int      @default(0) @map("sort_order")
+  level       Int      @default(0)
+  isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relationships
+  parent      Series?  @relation("SeriesHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Series[] @relation("SeriesHierarchy")
   titles      Title[]
 
   @@map("series")
   @@index([name])
+  @@index([parentId])
+  @@index([sortOrder])
+  @@index([level])
+  @@index([isActive])
 }
 
 model Warehouse {
@@ -106,12 +116,20 @@ model Title {
   // Status Tracking
   status          TitleStatus @default(ACTIVE)
 
+  // Additional Status Management Fields
+  isRetired       Boolean   @default(false) @map("is_retired")
+  retiredAt       DateTime? @map("retired_at")
+  isArchived      Boolean   @default(false) @map("is_archived")
+  archivedAt      DateTime? @map("archived_at")
+
   // Relationships
   seriesId        Int?      @map("series_id")
   series          Series?   @relation(fields: [seriesId], references: [id], onDelete: Restrict)
   inventory       Inventory[]
   stockMovements  StockMovement[]
   priceHistory    PriceHistory[]
+  statusHistory   TitleStatusHistory[]
+  notifications   NotificationLog[]
 
   // System Fields
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -267,4 +285,53 @@ enum MovementType {
   PULPED
   DAMAGED
   FREE_COPIES
+}
+
+model TitleStatusHistory {
+  id          Int         @id @default(autoincrement())
+  titleId     Int         @map("title_id")
+  fromStatus  TitleStatus @map("from_status")
+  toStatus    TitleStatus @map("to_status")
+  reason      String?     @db.VarChar(500)
+  changedBy   String?     @db.VarChar(100) @map("changed_by")
+  changedAt   DateTime    @default(now()) @map("changed_at")
+
+  // Relationships
+  title       Title       @relation(fields: [titleId], references: [id], onDelete: Cascade)
+
+  @@map("title_status_history")
+  @@index([titleId])
+  @@index([fromStatus])
+  @@index([toStatus])
+  @@index([changedAt])
+}
+
+model NotificationLog {
+  id          Int                 @id @default(autoincrement())
+  titleId     Int                 @map("title_id")
+  recipient   String              @db.VarChar(255)
+  subject     String              @db.VarChar(500)
+  message     String              @db.Text
+  status      NotificationStatus  @default(PENDING)
+  sentAt      DateTime?           @map("sent_at")
+  failureReason String?           @db.Text @map("failure_reason")
+  retryCount  Int                 @default(0) @map("retry_count")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  // Relationships
+  title       Title               @relation(fields: [titleId], references: [id], onDelete: Cascade)
+
+  @@map("notification_log")
+  @@index([titleId])
+  @@index([status])
+  @@index([sentAt])
+  @@index([createdAt])
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
 }

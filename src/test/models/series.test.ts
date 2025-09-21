@@ -215,4 +215,171 @@ describe('Series Model', () => {
       ).rejects.toThrow()
     })
   })
+
+  describe('Hierarchy Support', () => {
+    test('should create parent-child series relationship', async () => {
+      const parentSeries = await createTestSeries({
+        name: 'Marvel Universe',
+        description: 'Parent series for Marvel collections'
+      })
+
+      const childSeries = await testDb.series.create({
+        data: {
+          name: 'Spider-Man Collection',
+          description: 'Spider-Man comics subseries',
+          parentId: parentSeries.id,
+          level: 1,
+          sortOrder: 1
+        }
+      })
+
+      expect(childSeries.parentId).toBe(parentSeries.id)
+      expect(childSeries.level).toBe(1)
+      expect(childSeries.sortOrder).toBe(1)
+    })
+
+    test('should retrieve series with children', async () => {
+      const parent = await createTestSeries({ name: 'Parent Series' })
+
+      await testDb.series.create({
+        data: { name: 'Child 1', parentId: parent.id, sortOrder: 1 }
+      })
+      await testDb.series.create({
+        data: { name: 'Child 2', parentId: parent.id, sortOrder: 2 }
+      })
+
+      const seriesWithChildren = await testDb.series.findUnique({
+        where: { id: parent.id },
+        include: {
+          children: {
+            orderBy: { sortOrder: 'asc' }
+          }
+        }
+      })
+
+      expect(seriesWithChildren?.children).toHaveLength(2)
+      expect(seriesWithChildren?.children[0].name).toBe('Child 1')
+      expect(seriesWithChildren?.children[1].name).toBe('Child 2')
+    })
+
+    test('should retrieve series with parent', async () => {
+      const parent = await createTestSeries({ name: 'Parent Series' })
+      const child = await testDb.series.create({
+        data: { name: 'Child Series', parentId: parent.id }
+      })
+
+      const seriesWithParent = await testDb.series.findUnique({
+        where: { id: child.id },
+        include: { parent: true }
+      })
+
+      expect(seriesWithParent?.parent?.name).toBe('Parent Series')
+    })
+
+    test('should handle series deletion with children (set null)', async () => {
+      const parent = await createTestSeries({ name: 'Parent to Delete' })
+      const child = await testDb.series.create({
+        data: { name: 'Orphaned Child', parentId: parent.id }
+      })
+
+      await testDb.series.delete({ where: { id: parent.id } })
+
+      const orphanedChild = await testDb.series.findUnique({
+        where: { id: child.id }
+      })
+
+      expect(orphanedChild?.parentId).toBeNull()
+    })
+  })
+
+  describe('Series Ordering and Numbering', () => {
+    test('should maintain sort order within series hierarchy', async () => {
+      const parent = await createTestSeries({ name: 'Ordered Parent' })
+
+      const child3 = await testDb.series.create({
+        data: { name: 'Third Child', parentId: parent.id, sortOrder: 3 }
+      })
+      const child1 = await testDb.series.create({
+        data: { name: 'First Child', parentId: parent.id, sortOrder: 1 }
+      })
+      const child2 = await testDb.series.create({
+        data: { name: 'Second Child', parentId: parent.id, sortOrder: 2 }
+      })
+
+      const orderedChildren = await testDb.series.findMany({
+        where: { parentId: parent.id },
+        orderBy: { sortOrder: 'asc' }
+      })
+
+      expect(orderedChildren.map(c => c.name)).toEqual([
+        'First Child',
+        'Second Child',
+        'Third Child'
+      ])
+    })
+
+    test('should support multi-level hierarchy', async () => {
+      const grandparent = await createTestSeries({
+        name: 'Grandparent Series',
+        level: 0
+      })
+
+      const parent = await testDb.series.create({
+        data: {
+          name: 'Parent Series',
+          parentId: grandparent.id,
+          level: 1,
+          sortOrder: 1
+        }
+      })
+
+      const child = await testDb.series.create({
+        data: {
+          name: 'Child Series',
+          parentId: parent.id,
+          level: 2,
+          sortOrder: 1
+        }
+      })
+
+      expect(grandparent.level).toBe(0)
+      expect(parent.level).toBe(1)
+      expect(child.level).toBe(2)
+    })
+  })
+
+  describe('Series Status Management', () => {
+    test('should default to active status', async () => {
+      const series = await createTestSeries({ name: 'Default Active' })
+      expect(series.isActive).toBe(true)
+    })
+
+    test('should allow setting inactive status', async () => {
+      const series = await testDb.series.create({
+        data: {
+          name: 'Inactive Series',
+          isActive: false
+        }
+      })
+
+      expect(series.isActive).toBe(false)
+    })
+
+    test('should filter active series', async () => {
+      await createTestSeries({ name: 'Active Series 1' })
+      await testDb.series.create({
+        data: { name: 'Inactive Series', isActive: false }
+      })
+      await createTestSeries({ name: 'Active Series 2' })
+
+      const activeSeries = await testDb.series.findMany({
+        where: { isActive: true }
+      })
+
+      expect(activeSeries).toHaveLength(2)
+      expect(activeSeries.map(s => s.name)).toContain('Active Series 1')
+      expect(activeSeries.map(s => s.name)).toContain('Active Series 2')
+      expect(activeSeries.map(s => s.name)).not.toContain('Inactive Series')
+    })
+  })
 })
