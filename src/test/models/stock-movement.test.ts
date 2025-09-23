@@ -220,7 +220,7 @@ describe('StockMovement Model', () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'DEL' })
 
-      await testDb.stockMovement.create({
+      const movement = await testDb.stockMovement.create({
         data: {
           titleId: title.id,
           warehouseId: warehouse.id,
@@ -230,10 +230,17 @@ describe('StockMovement Model', () => {
         }
       })
 
-      // Should not be able to delete title that has movements
-      await expect(testDb.title.delete({
+      // Deleting title should cascade delete movements
+      await testDb.title.delete({
         where: { id: title.id }
-      })).rejects.toThrow()
+      })
+
+      // Movement should be deleted due to cascade
+      const deletedMovement = await testDb.stockMovement.findUnique({
+        where: { id: movement.id }
+      })
+
+      expect(deletedMovement).toBeNull()
     })
   })
 
