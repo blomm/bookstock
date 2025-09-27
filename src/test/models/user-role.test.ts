@@ -1,0 +1,554 @@
+import { describe, test, expect, beforeEach, afterAll } from 'vitest'
+import { testDb, cleanDatabase, disconnectTestDb, createTestUser, createTestRole } from '../utils/test-db'
+
+describe('UserRole Model', () => {
+  let testUser: any
+  let testRole: any
+
+  beforeEach(async () => {
+    await cleanDatabase()
+
+    // Create test user and role for relationship tests
+    testUser = await createTestUser()
+    testRole = await createTestRole()
+  })
+
+  afterAll(async () => {
+    await cleanDatabase()
+    await disconnectTestDb()
+  })
+
+  describe('Creation', () => {
+    test('should create user role with required fields only', async () => {
+      const userRoleData = {
+        userId: testUser.id,
+        roleId: testRole.id
+      }
+
+      const userRole = await testDb.userRole.create({
+        data: userRoleData
+      })
+
+      expect(userRole.userId).toBe(testUser.id)
+      expect(userRole.roleId).toBe(testRole.id)
+      expect(userRole.id).toBeDefined()
+      expect(userRole.isActive).toBe(true)
+      expect(userRole.assignedAt).toBeInstanceOf(Date)
+      expect(userRole.assignedBy).toBeNull()
+      expect(userRole.expiresAt).toBeNull()
+    })
+
+    test('should create user role with complete information', async () => {
+      const expirationDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days from now
+
+      const userRoleData = {
+        userId: testUser.id,
+        roleId: testRole.id,
+        assignedBy: 'admin_user_id',
+        expiresAt: expirationDate
+      }
+
+      const userRole = await testDb.userRole.create({
+        data: userRoleData
+      })
+
+      expect(userRole).toMatchObject(userRoleData)
+      expect(userRole.isActive).toBe(true)
+    })
+
+    test('should enforce unique user-role combination', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      await expect(
+        testDb.userRole.create({
+          data: {
+            userId: testUser.id,
+            roleId: testRole.id
+          }
+        })
+      ).rejects.toThrow()
+    })
+
+    test('should allow same user with different roles', async () => {
+      const secondRole = await testDb.role.create({
+        data: {
+          name: 'Second Role',
+          permissions: ['second:read']
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const secondUserRole = await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: secondRole.id
+        }
+      })
+
+      expect(secondUserRole).toBeDefined()
+      expect(secondUserRole.userId).toBe(testUser.id)
+      expect(secondUserRole.roleId).toBe(secondRole.id)
+    })
+
+    test('should allow same role for different users', async () => {
+      const secondUser = await testDb.user.create({
+        data: {
+          clerkId: 'clerk_second_user',
+          email: 'seconduser@example.com'
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const secondUserRole = await testDb.userRole.create({
+        data: {
+          userId: secondUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      expect(secondUserRole).toBeDefined()
+      expect(secondUserRole.userId).toBe(secondUser.id)
+      expect(secondUserRole.roleId).toBe(testRole.id)
+    })
+  })
+
+  describe('Updates', () => {
+    test('should update user role expiration', async () => {
+      const userRole = await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const expirationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+
+      const updatedUserRole = await testDb.userRole.update({
+        where: { id: userRole.id },
+        data: {
+          expiresAt: expirationDate,
+          assignedBy: 'admin_user_updated'
+        }
+      })
+
+      expect(updatedUserRole.expiresAt).toEqual(expirationDate)
+      expect(updatedUserRole.assignedBy).toBe('admin_user_updated')
+    })
+
+    test('should deactivate user role', async () => {
+      const userRole = await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const deactivatedUserRole = await testDb.userRole.update({
+        where: { id: userRole.id },
+        data: { isActive: false }
+      })
+
+      expect(deactivatedUserRole.isActive).toBe(false)
+    })
+  })
+
+  describe('Queries', () => {
+    test('should find user roles by user id', async () => {
+      const secondRole = await testDb.role.create({
+        data: {
+          name: 'Second Role',
+          permissions: ['second:read']
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: secondRole.id
+        }
+      })
+
+      const userRoles = await testDb.userRole.findMany({
+        where: { userId: testUser.id }
+      })
+
+      expect(userRoles).toHaveLength(2)
+    })
+
+    test('should find user roles by role id', async () => {
+      const secondUser = await testDb.user.create({
+        data: {
+          clerkId: 'clerk_second_for_role',
+          email: 'second.role@example.com'
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: secondUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const roleUsers = await testDb.userRole.findMany({
+        where: { roleId: testRole.id }
+      })
+
+      expect(roleUsers).toHaveLength(2)
+    })
+
+    test('should filter active user roles', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id,
+          isActive: true
+        }
+      })
+
+      const secondRole = await testDb.role.create({
+        data: {
+          name: 'Inactive Role Assignment',
+          permissions: ['inactive:read']
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: secondRole.id,
+          isActive: false
+        }
+      })
+
+      const activeUserRoles = await testDb.userRole.findMany({
+        where: {
+          userId: testUser.id,
+          isActive: true
+        }
+      })
+
+      expect(activeUserRoles).toHaveLength(1)
+      expect(activeUserRoles[0].roleId).toBe(testRole.id)
+    })
+
+    test('should filter non-expired user roles', async () => {
+      const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      const pastDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id,
+          expiresAt: futureDate
+        }
+      })
+
+      const expiredRole = await testDb.role.create({
+        data: {
+          name: 'Expired Role',
+          permissions: ['expired:read']
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: expiredRole.id,
+          expiresAt: pastDate
+        }
+      })
+
+      const nonExpiredRoles = await testDb.userRole.findMany({
+        where: {
+          userId: testUser.id,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } }
+          ]
+        }
+      })
+
+      expect(nonExpiredRoles).toHaveLength(1)
+      expect(nonExpiredRoles[0].roleId).toBe(testRole.id)
+    })
+  })
+
+  describe('Relationships', () => {
+    test('should include user information', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const userRoleWithUser = await testDb.userRole.findFirst({
+        where: {
+          userId: testUser.id,
+          roleId: testRole.id
+        },
+        include: { user: true }
+      })
+
+      expect(userRoleWithUser?.user.email).toBe('userrole@example.com')
+      expect(userRoleWithUser?.user.clerkId).toBe('clerk_user_role_test')
+    })
+
+    test('should include role information', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      const userRoleWithRole = await testDb.userRole.findFirst({
+        where: {
+          userId: testUser.id,
+          roleId: testRole.id
+        },
+        include: { role: true }
+      })
+
+      expect(userRoleWithRole?.role.name).toBe('Test Role')
+      expect(userRoleWithRole?.role.permissions).toEqual(['test:read', 'test:write'])
+    })
+
+    test('should include both user and role information', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id,
+          assignedBy: 'admin_123'
+        }
+      })
+
+      const userRoleComplete = await testDb.userRole.findFirst({
+        where: {
+          userId: testUser.id,
+          roleId: testRole.id
+        },
+        include: {
+          user: true,
+          role: true
+        }
+      })
+
+      expect(userRoleComplete?.user.email).toBe('userrole@example.com')
+      expect(userRoleComplete?.role.name).toBe('Test Role')
+      expect(userRoleComplete?.assignedBy).toBe('admin_123')
+    })
+  })
+
+  describe('Complex Queries', () => {
+    test('should get user with all active roles', async () => {
+      const adminRole = await testDb.role.create({
+        data: {
+          name: 'Admin',
+          permissions: ['user:*', 'role:*']
+        }
+      })
+
+      const inactiveRole = await testDb.role.create({
+        data: {
+          name: 'Inactive Role',
+          permissions: ['inactive:test']
+        }
+      })
+
+      // Create active role assignments
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id,
+          isActive: true
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: adminRole.id,
+          isActive: true
+        }
+      })
+
+      // Create inactive role assignment
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: inactiveRole.id,
+          isActive: false
+        }
+      })
+
+      const userWithActiveRoles = await testDb.user.findUnique({
+        where: { id: testUser.id },
+        include: {
+          userRoles: {
+            where: { isActive: true },
+            include: { role: true }
+          }
+        }
+      })
+
+      expect(userWithActiveRoles?.userRoles).toHaveLength(2)
+      const roleNames = userWithActiveRoles?.userRoles.map(ur => ur.role.name)
+      expect(roleNames).toContain('Test Role')
+      expect(roleNames).toContain('Admin')
+      expect(roleNames).not.toContain('Inactive Role')
+    })
+
+    test('should get role with all active users', async () => {
+      const secondUser = await testDb.user.create({
+        data: {
+          clerkId: 'clerk_second_active',
+          email: 'second.active@example.com'
+        }
+      })
+
+      const inactiveUser = await testDb.user.create({
+        data: {
+          clerkId: 'clerk_inactive_user',
+          email: 'inactive.user@example.com',
+          isActive: false
+        }
+      })
+
+      // Create user role assignments
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id,
+          isActive: true
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: secondUser.id,
+          roleId: testRole.id,
+          isActive: true
+        }
+      })
+
+      await testDb.userRole.create({
+        data: {
+          userId: inactiveUser.id,
+          roleId: testRole.id,
+          isActive: true
+        }
+      })
+
+      const roleWithActiveUsers = await testDb.role.findUnique({
+        where: { id: testRole.id },
+        include: {
+          userRoles: {
+            where: {
+              isActive: true,
+              user: { isActive: true }
+            },
+            include: { user: true }
+          }
+        }
+      })
+
+      expect(roleWithActiveUsers?.userRoles).toHaveLength(2)
+      const userEmails = roleWithActiveUsers?.userRoles.map(ur => ur.user.email)
+      expect(userEmails).toContain('userrole@example.com')
+      expect(userEmails).toContain('second.active@example.com')
+      expect(userEmails).not.toContain('inactive.user@example.com')
+    })
+  })
+
+  describe('Deletion', () => {
+    test('should delete user role assignment', async () => {
+      const userRole = await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      await testDb.userRole.delete({
+        where: { id: userRole.id }
+      })
+
+      const deletedUserRole = await testDb.userRole.findUnique({
+        where: { id: userRole.id }
+      })
+
+      expect(deletedUserRole).toBeNull()
+    })
+
+    test('should cascade delete on user deletion', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      await testDb.user.delete({
+        where: { id: testUser.id }
+      })
+
+      const userRoles = await testDb.userRole.findMany({
+        where: { userId: testUser.id }
+      })
+
+      expect(userRoles).toHaveLength(0)
+    })
+
+    test('should cascade delete on role deletion', async () => {
+      await testDb.userRole.create({
+        data: {
+          userId: testUser.id,
+          roleId: testRole.id
+        }
+      })
+
+      await testDb.role.delete({
+        where: { id: testRole.id }
+      })
+
+      const userRoles = await testDb.userRole.findMany({
+        where: { roleId: testRole.id }
+      })
+
+      expect(userRoles).toHaveLength(0)
+    })
+  })
+})
