@@ -8,8 +8,8 @@ describe('AuditLog Model', () => {
     await cleanDatabase()
 
     testUser = await createTestUser({
-      clerkId: `clerk_audit_test_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      email: `audit_${Date.now()}_${Math.random().toString(36).slice(2)}@example.com`
+      clerkId: 'clerk_audit_test',
+      email: 'audit@example.com'
     })
   })
 
@@ -521,10 +521,7 @@ describe('AuditLog Model', () => {
   describe('Performance', () => {
     test('should support indexed queries on common fields', async () => {
       // Create multiple logs for different users
-      const secondUser = await createTestUser({
-        clerkId: `clerk_second_audit_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        email: `second.audit_${Date.now()}_${Math.random().toString(36).slice(2)}@example.com`
-      })
+      const secondUser = await createTestUser()
 
       // Create logs for performance testing
       for (let i = 0; i < 10; i++) {

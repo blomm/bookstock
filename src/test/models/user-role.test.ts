@@ -9,8 +9,14 @@ describe('UserRole Model', () => {
     await cleanDatabase()
 
     // Create test user and role for relationship tests
-    testUser = await createTestUser()
-    testRole = await createTestRole()
+    testUser = await createTestUser({
+      clerkId: 'clerk_user_role_test',
+      email: 'userrole@example.com'
+    })
+    testRole = await createTestRole({
+      name: 'Test Role',
+      permissions: ['test:read', 'test:write']
+    })
   })
 
   afterAll(async () => {

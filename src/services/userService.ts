@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { prisma } from '@/lib/database'
 import { User, Prisma } from '@prisma/client'
 
 export interface CreateUserInput {
