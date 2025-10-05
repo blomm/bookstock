@@ -1,17 +1,17 @@
 'use client'
 
-import { SignUp } from '@clerk/nextjs'
+import { SignIn } from '@clerk/nextjs'
 import Link from 'next/link'
 
 /**
- * Sign Up Page
+ * Sign In Page
  *
- * This page provides user registration functionality using Clerk's
- * pre-built SignUp component. Users who sign up here will automatically
- * have a database record created via the webhook handler.
+ * This page provides user login functionality using Clerk's
+ * pre-built SignIn component with custom styling to match
+ * the BookStock application design.
  */
 
-export default function SignUpPage() {
+export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -32,15 +32,15 @@ export default function SignUpPage() {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome to BookStock
+            Sign in to BookStock
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Create your account to access the inventory management system
+            Access your inventory management dashboard
           </p>
         </div>
 
         <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <SignUp
+          <SignIn
             appearance={{
               elements: {
                 formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700',
@@ -57,50 +57,47 @@ export default function SignUpPage() {
                 footerActionLink: 'text-indigo-600 hover:text-indigo-500'
               }
             }}
-            signInUrl="/sign-in"
-            afterSignUpUrl="/dashboard"
-            routing="path"
-            path="/sign-up"
+            signUpUrl="/sign-up"
+            afterSignInUrl="/dashboard"
           />
 
           <div className="mt-6 border-t border-gray-200 pt-6">
             <p className="text-xs text-gray-500 text-center">
-              Already have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link
-                href="/sign-in"
+                href="/sign-up"
                 className="font-medium text-indigo-600 hover:text-indigo-500"
               >
-                Sign in here
+                Sign up here
               </Link>
             </p>
           </div>
 
           <div className="mt-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
-                    className="h-5 w-5 text-blue-400"
+                    className="h-5 w-5 text-yellow-400"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                       clipRule="evenodd"
                     />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">
-                    New User Information
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    First Time Users
                   </h3>
-                  <div className="mt-2 text-sm text-blue-700">
-                    <ul className="list-disc space-y-1 pl-5">
-                      <li>Your account will be created with read-only permissions initially</li>
-                      <li>Contact your system administrator to request additional privileges</li>
-                      <li>You'll receive a verification email after signing up</li>
-                    </ul>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>
+                      If this is your first time accessing BookStock, please sign up for a new account.
+                      Your administrator will assign appropriate permissions based on your role.
+                    </p>
                   </div>
                 </div>
               </div>

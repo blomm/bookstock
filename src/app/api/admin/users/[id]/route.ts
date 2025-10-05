@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { userService } from '@/services/userService'
+import { authorizationService } from '@/services/authorizationService'
+import { z } from 'zod'
+
+const UpdateUserSchema = z.object({
+  email: z.string().email().optional(),
+  first_name: z.string().min(1).max(100).optional(),
+  last_name: z.string().min(1).max(100).optional(),
+  is_active: z.boolean().optional()
+})
+
+async function getUserHandler(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await userService.findById(params.id)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Add effective permissions
+    const effectivePermissions = await authorizationService.getEffectivePermissions(user.id)
+
+    return NextResponse.json({
+      ...user,
+      effectivePermissions
+    })
+  } catch (error) {
+    console.error('Error fetching user:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch user' },
+      { status: 500 }
+    )
+  }
+}
+
+async function updateUserHandler(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await req.json()
+    const data = UpdateUserSchema.parse(body)
+
+    const user = await userService.update(params.id, data)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(user)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('Error updating user:', error)
+    return NextResponse.json(
+      { error: 'Failed to update user' },
+      { status: 500 }
+    )
+  }
+}
+
+async function deleteUserHandler(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Don't actually delete users, just deactivate them
+    const user = await userService.update(params.id, { is_active: false })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ success: true, deactivated: true })
+  } catch (error) {
+    console.error('Error deactivating user:', error)
+    return NextResponse.json(
+      { error: 'Failed to deactivate user' },
+      { status: 500 }
+    )
+  }
+}
+
+export const GET = requirePermission(
+  'user:read',
+  getUserHandler
+)
+
+export const PUT = withAuditLog(
+  'user:update',
+  'user'
+)(
+  requirePermission(
+    'user:update',
+    updateUserHandler
+  )
+)
+
+export const DELETE = withAuditLog(
+  'user:deactivate',
+  'user'
+)(
+  requirePermission(
+    'user:delete',
+    deleteUserHandler
+  )
+)

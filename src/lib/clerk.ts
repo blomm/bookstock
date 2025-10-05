@@ -9,7 +9,7 @@
 const required_clerk_env_vars = {
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
-  CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET,
+  // CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET, // Optional for basic auth testing
 }
 
 // Validate that all required environment variables are present

@@ -16,22 +16,30 @@ import { get_user_role, has_permission, type UserRole } from '@/lib/clerk'
  * @returns User information with role, or null if not authenticated
  */
 export async function get_current_user() {
-  const { userId, user } = await auth()
+  try {
+    const { userId, user } = await auth()
 
-  if (!userId || !user) {
+    if (!userId || !user) {
+      return null
+    }
+
+    // Get user role from Clerk metadata
+    const role = get_user_role(user) as UserRole
+
+    const result = {
+      id: userId,
+      email: user.emailAddresses[0]?.emailAddress,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role,
+      user // Raw Clerk user object
+    }
+
+    return result
+  } catch (error) {
+    // Handle auth errors gracefully
+    console.error('Authentication error:', error)
     return null
-  }
-
-  // Get user role from Clerk metadata
-  const role = get_user_role(user) as UserRole
-
-  return {
-    id: userId,
-    email: user.emailAddresses[0]?.emailAddress,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role,
-    user // Raw Clerk user object
   }
 }
 
@@ -188,19 +196,23 @@ export async function sync_user_to_database(clerk_user: any) {
  * @returns User info or throws error
  */
 export async function validate_api_auth(request: NextRequest) {
-  const { userId, user } = await auth()
+  try {
+    const { userId, user } = await auth()
 
-  if (!userId || !user) {
+    if (!userId || !user) {
+      throw new Error('Unauthorized')
+    }
+
+    const role = get_user_role(user) as UserRole
+
+    return {
+      userId,
+      user,
+      role,
+      email: user.emailAddresses[0]?.emailAddress,
+    }
+  } catch (error) {
     throw new Error('Unauthorized')
-  }
-
-  const role = get_user_role(user) as UserRole
-
-  return {
-    userId,
-    user,
-    role,
-    email: user.emailAddresses[0]?.emailAddress,
   }
 }
 
