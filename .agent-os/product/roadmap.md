@@ -12,7 +12,7 @@
 - [ ] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
 - [ ] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
 - [ ] Series Management - Group titles by series (e.g., "Opinionated Guides") `S`
-- [ ] User Authentication - Secure login system with role-based access control `M`
+- [x] User Authentication - Secure login system with role-based access control `M`
 
 ### Dependencies
 

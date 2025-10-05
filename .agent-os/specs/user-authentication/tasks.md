@@ -3,7 +3,7 @@
 These are the tasks to be completed for the spec detailed in @.agent-os/specs/user-authentication.md
 
 > Created: 2025-09-24
-> Status: **IN PROGRESS** - Task 1-3 Complete, Task 4-5 Pending
+> Status: **IN PROGRESS** - Tasks 1-3 Complete (Database Schema, Clerk Integration, Authorization System), Tasks 4-5 Pending (UI Components, Testing & Security)
 
 ## Tasks
 
