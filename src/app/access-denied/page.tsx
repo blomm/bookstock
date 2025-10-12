@@ -1,77 +1,118 @@
-import { get_current_user } from '@/lib/auth'
+'use client'
+
+import { useAuth, useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ShieldX, Loader2 } from 'lucide-react'
 
-/**
- * Access Denied Page
- *
- * This page is shown when a user tries to access a resource
- * they don&apos;t have permission for.
- */
+export default function AccessDeniedPage() {
+  const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
+  const router = useRouter()
 
-export default async function AccessDeniedPage() {
-  const user = await get_current_user()
+  const formatRole = (role?: string) => {
+    if (!role) return 'No Role Assigned'
+    return role
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  const goBack = () => {
+    router.back()
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center space-x-2 text-gray-600">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  const userRole = user?.publicMetadata?.role as string | undefined
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div
+      data-testid="access-denied-container"
+      className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+    >
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
-            <svg
-              className="h-6 w-6 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"
-              />
-            </svg>
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-red-100">
+            <ShieldX
+              className="h-8 w-8 text-red-600"
+              data-testid="access-denied-icon"
+            />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Access Denied
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            You don&apos;t have permission to access this resource
+            You don't have permission to access this resource
           </p>
         </div>
 
         <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-700">
-                <strong>Current User:</strong> {user?.email || 'Not authenticated'}
-              </p>
-              {user?.role && (
-                <p className="text-sm text-gray-700">
-                  <strong>Role:</strong> {user.role.replace('_', ' ').toLowerCase()}
+          <div className="space-y-6">
+            {/* User Status */}
+            {!isSignedIn ? (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-4">
+                  Please sign in to access this resource
                 </p>
-              )}
-            </div>
+                <Link
+                  href="/sign-in"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Sign In
+                </Link>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-700 mb-2">
+                  You are signed in as: {user?.emailAddresses[0]?.emailAddress}
+                </p>
+                <p className="text-sm text-gray-700 mb-4">
+                  Current role: {formatRole(userRole)}
+                </p>
 
-            <div className="border-t border-gray-200 pt-4">
+                {!userRole && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                    <p className="text-sm text-yellow-800">
+                      Your account has not been assigned any permissions yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Contact Information */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-base font-medium text-gray-900 mb-2">Need access?</h3>
               <p className="text-sm text-gray-600 mb-4">
-                If you believe this is an error, please contact your system administrator.
+                Contact your system administrator to request additional permissions
               </p>
 
-              <div className="space-y-2">
+              {/* Navigation Options */}
+              <div className="space-y-3">
                 <Link
-                  href="/"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  href="/dashboard"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Return to Home
+                  Go to Dashboard
                 </Link>
 
-                {user && (
-                  <Link
-                    href="/dashboard"
-                    className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Go to Dashboard
-                  </Link>
-                )}
+                <button
+                  onClick={goBack}
+                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Go Back
+                </button>
               </div>
             </div>
           </div>
