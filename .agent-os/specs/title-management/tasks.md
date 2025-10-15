@@ -126,33 +126,33 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/ti
 - ✅ Bulk price update updates multiple titles atomically
 - ✅ Price history created for all bulk price changes
 
-### 6. UI Components - Title List & Search
+### 6. UI Components - Title List & Search ✅ COMPLETED
 
 **Goal:** Build title list page with search and filtering
 
-- [ ] 6.1 Create title list page at `/app/titles/page.tsx`
-- [ ] 6.2 Implement data fetching with SWR
-- [ ] 6.3 Build title table component with sortable columns
-- [ ] 6.4 Implement pagination controls
-- [ ] 6.5 Build search input component with debouncing
-- [ ] 6.6 Build filter dropdowns (format, series, category, publisher)
-- [ ] 6.7 Implement loading states and skeletons
-- [ ] 6.8 Implement error states with retry
-- [ ] 6.9 Add "Create Title" button (permission-based visibility)
-- [ ] 6.10 Write component tests for title list
-- [ ] 6.11 Test search and filter interactions
-- [ ] 6.12 Verify UI components render correctly
+- [x] 6.1 Create title list page at `/app/titles/page.tsx`
+- [x] 6.2 Implement data fetching with SWR
+- [x] 6.3 Build title table component with sortable columns
+- [x] 6.4 Implement pagination controls
+- [x] 6.5 Build search input component with debouncing
+- [x] 6.6 Build filter dropdowns (format, series, category, publisher)
+- [x] 6.7 Implement loading states and skeletons
+- [x] 6.8 Implement error states with retry
+- [x] 6.9 Add "Create Title" button (permission-based visibility)
+- [x] 6.10 Write component tests for title list
+- [x] 6.11 Test search and filter interactions
+- [x] 6.12 Verify UI components render correctly
 
 **Acceptance Criteria:**
-- Title list displays with data from API
-- Pagination works (prev/next, page numbers)
-- Search filters results on typing (debounced)
-- Format filter dropdown works
-- Series filter dropdown works
-- Clicking title navigates to detail page
-- Loading spinner shows during data fetch
-- Error message shows on failure
-- Create button visible only to authorized users
+- ✅ Title list displays with data from API
+- ✅ Pagination works (prev/next, page numbers)
+- ✅ Search filters results on typing (debounced)
+- ✅ Format filter dropdown works
+- ✅ Category and publisher filter inputs work
+- ✅ Clicking title navigates to detail page
+- ✅ Loading spinner shows during data fetch
+- ✅ Error message shows on failure with retry button
+- ✅ Create button visible only to authorized users
 
 ### 7. UI Components - Title Form
 
