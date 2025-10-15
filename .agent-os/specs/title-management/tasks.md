@@ -102,29 +102,29 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/ti
 - ✅ Validation errors return 400 with details
 - ✅ Duplicate ISBN returns 409
 
-### 5. API Routes - Bulk Operations
+### 5. API Routes - Bulk Operations ✅ COMPLETED
 
 **Goal:** Implement bulk import and update endpoints
 
-- [ ] 5.1 Implement POST /api/titles/bulk-import route handler
-- [ ] 5.2 Implement GET /api/titles/export route handler (CSV export)
-- [ ] 5.3 Implement PUT /api/titles/bulk-update-prices route handler
-- [ ] 5.4 Add CSV parsing library (e.g., papaparse)
-- [ ] 5.5 Add CSV generation library (e.g., json2csv)
-- [ ] 5.6 Write integration tests for bulk import (success, partial failure)
-- [ ] 5.7 Write integration tests for CSV export
-- [ ] 5.8 Write integration tests for bulk price updates
-- [ ] 5.9 Test error handling for malformed CSV
-- [ ] 5.10 Test large file handling (100+ titles)
-- [ ] 5.11 Verify all bulk operation tests pass
+- [x] 5.1 Implement POST /api/titles/bulk-import route handler
+- [x] 5.2 Implement GET /api/titles/export route handler (CSV export)
+- [x] 5.3 Implement PUT /api/titles/bulk-update-prices route handler
+- [x] 5.4 Add CSV parsing library (papaparse)
+- [x] 5.5 Add CSV generation library (json2csv)
+- [x] 5.6 Write integration tests for bulk import (success, partial failure)
+- [x] 5.7 Write integration tests for CSV export
+- [x] 5.8 Write integration tests for bulk price updates
+- [x] 5.9 Test error handling for malformed CSV
+- [x] 5.10 Test large file handling (100+ titles)
+- [x] 5.11 Verify all bulk operation tests pass
 
 **Acceptance Criteria:**
-- Bulk import processes valid titles
-- Bulk import returns detailed error report for invalid titles
-- CSV export generates downloadable file
-- CSV export respects filtering parameters
-- Bulk price update updates multiple titles atomically
-- Price history created for all bulk price changes
+- ✅ Bulk import processes valid titles
+- ✅ Bulk import returns detailed error report for invalid titles
+- ✅ CSV export generates downloadable file
+- ✅ CSV export respects filtering parameters
+- ✅ Bulk price update updates multiple titles atomically
+- ✅ Price history created for all bulk price changes
 
 ### 6. UI Components - Title List & Search
 

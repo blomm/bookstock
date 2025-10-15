@@ -13,10 +13,18 @@ const global_for_prisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// In test environment, always create a new client to pick up TEST_DATABASE_URL
+const shouldCache = process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test'
+
 export const prisma =
-  global_for_prisma.prisma ??
+  (shouldCache ? global_for_prisma.prisma : undefined) ??
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
+    }
   })
 
-if (process.env.NODE_ENV !== 'production') global_for_prisma.prisma = prisma
+if (shouldCache) global_for_prisma.prisma = prisma

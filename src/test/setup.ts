@@ -3,7 +3,7 @@ import { beforeAll, afterAll, afterEach } from 'vitest'
 
 // Mock environment variables for testing
 beforeAll(() => {
-  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/bookstock_test'
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5433/bookstock_test'
 })
 
 afterEach(() => {
