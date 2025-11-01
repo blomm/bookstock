@@ -131,6 +131,7 @@ model Title {
   royaltyThreshold Int?     @map("royalty_threshold")                  // Minimum sales
   printRunSize    Int?      @map("print_run_size")
   reprintThreshold Int?     @map("reprint_threshold")
+  lowStockThreshold Int?    @map("low_stock_threshold")                // Low stock alert threshold
 
   // Additional Metadata
   description     String?   @db.Text
@@ -167,6 +168,7 @@ model Inventory {
   currentStock       Int       @map("current_stock")
   reservedStock      Int       @default(0) @map("reserved_stock")
   lastMovementDate   DateTime? @map("last_movement_date")
+  lastStockCheck     DateTime? @map("last_stock_check")  // Timestamp of last manual stock verification
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
@@ -221,6 +223,7 @@ model StockMovement {
   printerId             Int?         @map("printer_id")
   referenceNumber       String?      @db.VarChar(100) @map("reference_number")
   notes                 String?      @db.Text
+  createdBy             String?      @map("created_by")  // User ID who created movement
   createdAt             DateTime     @default(now()) @map("created_at")
   updatedAt             DateTime     @updatedAt @map("updated_at")
 
@@ -230,6 +233,7 @@ model StockMovement {
   sourceWarehouse       Warehouse?   @relation("SourceWarehouse", fields: [sourceWarehouseId], references: [id])
   destinationWarehouse  Warehouse?   @relation("DestinationWarehouse", fields: [destinationWarehouseId], references: [id])
   printer               Printer?     @relation(fields: [printerId], references: [id])
+  creator               User?        @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@map("stock_movements")
   @@index([titleId])
@@ -240,6 +244,7 @@ model StockMovement {
   @@index([destinationWarehouseId])
   @@index([printerId])
   @@index([rrpAtTime])
+  @@index([createdBy])
 }
 
 enum Format {
@@ -252,6 +257,7 @@ enum Format {
 enum MovementType {
   // Inbound movements
   PRINT_RECEIVED
+  REPRINT             // Subsequent print runs
   WAREHOUSE_TRANSFER
 
   // Outbound - Sales channels
@@ -265,6 +271,9 @@ enum MovementType {
   PULPED
   DAMAGED
   FREE_COPIES
+
+  // Manual adjustments
+  STOCK_ADJUSTMENT    // Manual stock corrections
 }
 
 // Authentication Models
@@ -283,6 +292,7 @@ model User {
   // Relationships
   userRoles       UserRole[]
   auditLogs       AuditLog[]
+  stockMovements  StockMovement[]
 
   @@map("users")
   @@index([clerkId])
