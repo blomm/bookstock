@@ -31,20 +31,20 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/in
   - [x] 2.11 Update Inventory.lastStockCheck timestamp on manual adjustments
   - [x] 2.12 Verify all tests pass
 
-- [ ] 3. Build API Endpoints for Inventory Operations
-  - [ ] 3.1 Write integration tests for GET /api/inventory/dashboard endpoint
-  - [ ] 3.2 Write integration tests for GET /api/inventory/low-stock endpoint
-  - [ ] 3.3 Write integration tests for POST /api/stock-movements endpoint
-  - [ ] 3.4 Write integration tests for GET /api/stock-movements endpoint with filters
-  - [ ] 3.5 Write integration tests for PATCH /api/titles/:id/stock-threshold endpoint
-  - [ ] 3.6 Implement GET /api/inventory/dashboard with authentication (returns inventory grouped by warehouse with current stock levels)
-  - [ ] 3.7 Implement GET /api/inventory/low-stock with authentication (returns titles below threshold with warehouse breakdown)
-  - [ ] 3.8 Implement POST /api/stock-movements with authentication and validation (creates movement and updates inventory)
-  - [ ] 3.9 Implement GET /api/stock-movements with authentication (returns paginated movement history with filters for titleId, warehouseId, dateFrom, dateTo, movementType)
-  - [ ] 3.10 Implement PATCH /api/titles/:id/stock-threshold with authentication and validation (updates low stock threshold)
-  - [ ] 3.11 Add proper error handling for invalid movements (negative stock, missing references, invalid quantities)
-  - [ ] 3.12 Add authorization checks to ensure users can only access their organization's inventory
-  - [ ] 3.13 Verify all tests pass
+- [x] 3. Build API Endpoints for Inventory Operations
+  - [x] 3.1 Write integration tests for GET /api/inventory/dashboard endpoint
+  - [x] 3.2 Write integration tests for GET /api/inventory/low-stock endpoint
+  - [x] 3.3 Write integration tests for POST /api/stock-movements endpoint
+  - [x] 3.4 Write integration tests for GET /api/stock-movements endpoint with filters
+  - [x] 3.5 Write integration tests for PATCH /api/titles/:id/stock-threshold endpoint
+  - [x] 3.6 Implement GET /api/inventory/dashboard with authentication (returns inventory grouped by warehouse with current stock levels)
+  - [x] 3.7 Implement GET /api/inventory/low-stock with authentication (returns titles below threshold with warehouse breakdown)
+  - [x] 3.8 Implement POST /api/stock-movements with authentication and validation (creates movement and updates inventory)
+  - [x] 3.9 Implement GET /api/stock-movements with authentication (returns paginated movement history with filters for titleId, warehouseId, dateFrom, dateTo, movementType)
+  - [x] 3.10 Implement PATCH /api/titles/:id/stock-threshold with authentication and validation (updates low stock threshold)
+  - [x] 3.11 Add proper error handling for invalid movements (negative stock, missing references, invalid quantities)
+  - [x] 3.12 Add authorization checks to ensure users can only access their organization's inventory
+  - [x] 3.13 Verify all tests pass
 
 - [ ] 4. Create UI Components and Pages for Inventory Tracking
   - [ ] 4.1 Write component tests for InventoryDashboard component
