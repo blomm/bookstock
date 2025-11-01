@@ -8,7 +8,8 @@ const isProtectedRoute = createRouteMatcher([
   '/warehouses(.*)',
   '/reports(.*)',
   '/admin(.*)',
-  '/api/auth/webhook',
+  '/profile(.*)',
+  '/api(.*)', // Protect all API routes
 ])
 
 // Define public routes that don't require authentication
@@ -17,9 +18,10 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/access-denied',
+  '/api/auth/webhook', // Webhook should be public for Clerk to call it
 ])
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   // Allow public routes without authentication
   if (isPublicRoute(req)) {
     return
@@ -27,7 +29,7 @@ export default clerkMiddleware((auth, req) => {
 
   // Protect all other routes
   if (isProtectedRoute(req)) {
-    auth().protect()
+    await auth.protect()
   }
 })
 

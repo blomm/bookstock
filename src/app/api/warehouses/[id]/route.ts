@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
 import { warehouseService } from '@/services/warehouseService'
+import { UpdateWarehouseSchema } from '@/lib/validators/warehouse'
 import { z } from 'zod'
-
-const UpdateWarehouseSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  code: z.string().min(1).max(10).optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postal_code: z.string().optional(),
-  country: z.string().optional(),
-  contact_person: z.string().optional(),
-  contact_email: z.string().email().optional(),
-  contact_phone: z.string().optional(),
-  is_active: z.boolean().optional()
-})
 
 async function getWarehouseHandler(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const warehouse = await warehouseService.findById(params.id)
+    const id = parseInt(params.id)
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'Invalid warehouse ID' },
+        { status: 400 }
+      )
+    }
+
+    const warehouse = await warehouseService.findById(id)
 
     if (!warehouse) {
       return NextResponse.json(
@@ -46,17 +41,18 @@ async function updateWarehouseHandler(
   { params }: { params: { id: string } }
 ) {
   try {
+    const id = parseInt(params.id)
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'Invalid warehouse ID' },
+        { status: 400 }
+      )
+    }
+
     const body = await req.json()
     const data = UpdateWarehouseSchema.parse(body)
 
-    const warehouse = await warehouseService.update(params.id, data)
-
-    if (!warehouse) {
-      return NextResponse.json(
-        { error: 'Warehouse not found' },
-        { status: 404 }
-      )
-    }
+    const warehouse = await warehouseService.update(id, data)
 
     return NextResponse.json(warehouse)
   } catch (error) {
@@ -64,6 +60,22 @@ async function updateWarehouseHandler(
       return NextResponse.json(
         { error: 'Invalid input', details: error.errors },
         { status: 400 }
+      )
+    }
+
+    // Handle duplicate warehouse code error
+    if (error instanceof Error && error.message.includes('already exists')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 409 }
+      )
+    }
+
+    // Handle warehouse not found error
+    if (error instanceof Error && error.message === 'Warehouse not found') {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 404 }
       )
     }
 
@@ -80,17 +92,34 @@ async function deleteWarehouseHandler(
   { params }: { params: { id: string } }
 ) {
   try {
-    const deleted = await warehouseService.delete(params.id)
-
-    if (!deleted) {
+    const id = parseInt(params.id)
+    if (isNaN(id)) {
       return NextResponse.json(
-        { error: 'Warehouse not found' },
+        { error: 'Invalid warehouse ID' },
+        { status: 400 }
+      )
+    }
+
+    await warehouseService.delete(id)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    // Handle warehouse not found error
+    if (error instanceof Error && error.message === 'Warehouse not found') {
+      return NextResponse.json(
+        { error: error.message },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
+    // Handle warehouse with inventory error
+    if (error instanceof Error && error.message.includes('existing inventory')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+
     console.error('Error deleting warehouse:', error)
     return NextResponse.json(
       { error: 'Failed to delete warehouse' },

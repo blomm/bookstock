@@ -8,7 +8,7 @@
 ### Features
 
 - [x] Title Management System - Create, edit, and manage book catalog with ISBN, author, format, RRP, unit cost `M` **COMPLETED 2025-10-15**
-- [ ] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S`
+- [x] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S` **COMPLETED 2025-11-01**
 - [ ] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
 - [ ] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
 - [ ] Series Management - Group titles by series (e.g., "Opinionated Guides") `S`

@@ -8,46 +8,64 @@ async function main() {
   // Create the three main warehouses
   console.log('📦 Creating warehouses...')
 
-  const turnaround = await prisma.warehouse.upsert({
-    where: { code: 'TRN' },
+  const ukWarehouse = await prisma.warehouse.upsert({
+    where: { code: 'UK-LON' },
     update: {},
     create: {
-      name: 'Turnaround',
-      code: 'TRN',
-      location: 'UK',
-      fulfillsChannels: ['UK_TRADE_SALES', 'ROW_TRADE_SALES'],
-      isActive: true
+      name: 'UK Warehouse - London',
+      code: 'UK-LON',
+      type: 'PHYSICAL',
+      status: 'ACTIVE',
+      isActive: true,
+      addressLine1: '123 Publishing Street',
+      city: 'London',
+      postalCode: 'EC1A 1BB',
+      country: 'GB',
+      contactName: 'UK Operations Team',
+      contactEmail: 'uk.warehouse@bookstock.com',
+      contactPhone: '+44 20 1234 5678',
+      notes: 'Primary UK warehouse for trade and retail distribution'
     }
   })
 
-  const acc = await prisma.warehouse.upsert({
-    where: { code: 'ACC' },
+  const usWarehouse = await prisma.warehouse.upsert({
+    where: { code: 'US-NYC' },
     update: {},
     create: {
-      name: 'ACC',
-      code: 'ACC',
-      location: 'US',
-      fulfillsChannels: ['US_TRADE_SALES'],
-      isActive: true
+      name: 'US Warehouse - New York',
+      code: 'US-NYC',
+      type: 'PHYSICAL',
+      status: 'ACTIVE',
+      isActive: true,
+      addressLine1: '456 Book Avenue',
+      city: 'New York',
+      stateProvince: 'NY',
+      postalCode: '10001',
+      country: 'US',
+      contactName: 'US Operations Team',
+      contactEmail: 'us.warehouse@bookstock.com',
+      contactPhone: '+1 212 555 0123',
+      notes: 'US distribution center for North American market'
     }
   })
 
-  const flostream = await prisma.warehouse.upsert({
-    where: { code: 'FLS' },
+  const onlineWarehouse = await prisma.warehouse.upsert({
+    where: { code: 'ONLINE' },
     update: {},
     create: {
-      name: 'Flostream',
-      code: 'FLS',
-      location: 'UK',
-      fulfillsChannels: ['ONLINE_SALES'],
-      isActive: true
+      name: 'Online Fulfillment Center',
+      code: 'ONLINE',
+      type: 'VIRTUAL',
+      status: 'ACTIVE',
+      isActive: true,
+      notes: 'Virtual warehouse for online sales and third-party fulfillment services'
     }
   })
 
   console.log('✅ Created warehouses:', {
-    turnaround: turnaround.name,
-    acc: acc.name,
-    flostream: flostream.name
+    uk: ukWarehouse.name,
+    us: usWarehouse.name,
+    online: onlineWarehouse.name
   })
 
   // Create example series for testing
@@ -256,13 +274,13 @@ async function main() {
     where: {
       titleId_warehouseId: {
         titleId: title1.id,
-        warehouseId: turnaround.id
+        warehouseId: ukWarehouse.id
       }
     },
     update: {},
     create: {
       titleId: title1.id,
-      warehouseId: turnaround.id,
+      warehouseId: ukWarehouse.id,
       currentStock: 2400,
       reservedStock: 50,
       lastMovementDate: new Date('2024-03-15')
@@ -273,13 +291,13 @@ async function main() {
     where: {
       titleId_warehouseId: {
         titleId: title1.id,
-        warehouseId: acc.id
+        warehouseId: usWarehouse.id
       }
     },
     update: {},
     create: {
       titleId: title1.id,
-      warehouseId: acc.id,
+      warehouseId: usWarehouse.id,
       currentStock: 450,
       reservedStock: 25,
       lastMovementDate: new Date('2024-03-15')
@@ -290,13 +308,13 @@ async function main() {
     where: {
       titleId_warehouseId: {
         titleId: title1.id,
-        warehouseId: flostream.id
+        warehouseId: onlineWarehouse.id
       }
     },
     update: {},
     create: {
       titleId: title1.id,
-      warehouseId: flostream.id,
+      warehouseId: onlineWarehouse.id,
       currentStock: 150,
       reservedStock: 10,
       lastMovementDate: new Date('2024-03-15')
@@ -308,13 +326,13 @@ async function main() {
     where: {
       titleId_warehouseId: {
         titleId: title2.id,
-        warehouseId: turnaround.id
+        warehouseId: ukWarehouse.id
       }
     },
     update: {},
     create: {
       titleId: title2.id,
-      warehouseId: turnaround.id,
+      warehouseId: ukWarehouse.id,
       currentStock: 1600,
       reservedStock: 20,
       lastMovementDate: new Date('2024-01-20')
@@ -325,13 +343,13 @@ async function main() {
     where: {
       titleId_warehouseId: {
         titleId: title2.id,
-        warehouseId: flostream.id
+        warehouseId: onlineWarehouse.id
       }
     },
     update: {},
     create: {
       titleId: title2.id,
-      warehouseId: flostream.id,
+      warehouseId: onlineWarehouse.id,
       currentStock: 400,
       reservedStock: 15,
       lastMovementDate: new Date('2024-01-20')
@@ -347,7 +365,7 @@ async function main() {
   await prisma.stockMovement.create({
     data: {
       titleId: title1.id,
-      warehouseId: turnaround.id,
+      warehouseId: ukWarehouse.id,
       movementType: 'PRINT_RECEIVED',
       quantity: 3000,
       movementDate: new Date('2024-03-15'),
@@ -360,7 +378,7 @@ async function main() {
   await prisma.stockMovement.create({
     data: {
       titleId: title2.id,
-      warehouseId: turnaround.id,
+      warehouseId: ukWarehouse.id,
       movementType: 'PRINT_RECEIVED',
       quantity: 2000,
       movementDate: new Date('2024-01-20'),
@@ -374,7 +392,7 @@ async function main() {
   await prisma.stockMovement.create({
     data: {
       titleId: title1.id,
-      warehouseId: turnaround.id,
+      warehouseId: ukWarehouse.id,
       movementType: 'UK_TRADE_SALES',
       quantity: -350,
       movementDate: new Date('2024-03-20'),
@@ -389,7 +407,7 @@ async function main() {
   await prisma.stockMovement.create({
     data: {
       titleId: title1.id,
-      warehouseId: flostream.id,
+      warehouseId: onlineWarehouse.id,
       movementType: 'ONLINE_SALES',
       quantity: -75,
       movementDate: new Date('2024-03-25'),
@@ -405,7 +423,7 @@ async function main() {
   await prisma.stockMovement.create({
     data: {
       titleId: title1.id,
-      warehouseId: turnaround.id,
+      warehouseId: ukWarehouse.id,
       movementType: 'UK_TRADE_SALES',
       quantity: -200,
       movementDate: new Date('2024-05-15'),
@@ -421,12 +439,12 @@ async function main() {
   await prisma.stockMovement.create({
     data: {
       titleId: title1.id,
-      warehouseId: acc.id,
+      warehouseId: usWarehouse.id,
       movementType: 'WAREHOUSE_TRANSFER',
       quantity: 500,
       movementDate: new Date('2024-03-18'),
-      sourceWarehouseId: turnaround.id,
-      destinationWarehouseId: acc.id,
+      sourceWarehouseId: ukWarehouse.id,
+      destinationWarehouseId: usWarehouse.id,
       referenceNumber: 'TRANSFER-2024-001',
       notes: 'Transfer to US for anticipated demand'
     }
@@ -574,7 +592,7 @@ async function main() {
   })
 
   const readOnlyUserRole = await prisma.role.upsert({
-    where: { name: 'Read-Only User' },
+    where: { name: 'read_only_user' },
     update: {
       description: 'View-only access for stakeholders and junior team members',
       permissions: [
@@ -584,7 +602,7 @@ async function main() {
       ]
     },
     create: {
-      name: 'Read-Only User',
+      name: 'read_only_user',
       description: 'View-only access for stakeholders and junior team members',
       permissions: [
         'title:read',

@@ -112,13 +112,13 @@ export function apiAuthMiddleware(
       if (error instanceof Error) {
         if (error.message === 'Unauthorized') {
           return NextResponse.json(
-            { error: 'Unauthorized' },
+            { error: 'Unauthorized', details: error.toString() },
             { status: 401 }
           )
         }
         if (error.message === 'Forbidden') {
           return NextResponse.json(
-            { error: 'Forbidden' },
+            { error: 'Forbidden', details: error.toString() },
             { status: 403 }
           )
         }

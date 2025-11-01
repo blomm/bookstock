@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Implement warehouse entity management to support multi-location inventory tracking across UK, US, and online fulfillment centers. This feature provides the foundational infrastructure for warehouse-specific stock tracking by allowing admins to configure warehouse locations with properties like name, location code, address, contact details, and status (active/inactive). The system will initialize with three default warehouses and provide a management UI with role-based access control where all authenticated users can view warehouses while admins can create, edit, and manage warehouse status.

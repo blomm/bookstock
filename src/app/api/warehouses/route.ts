@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
 import { warehouseService } from '@/services/warehouseService'
+import { CreateWarehouseSchema, WarehouseTypeSchema, WarehouseStatusSchema } from '@/lib/validators/warehouse'
 import { z } from 'zod'
-
-const CreateWarehouseSchema = z.object({
-  name: z.string().min(1).max(255),
-  code: z.string().min(1).max(10),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postal_code: z.string().optional(),
-  country: z.string().optional(),
-  contact_person: z.string().optional(),
-  contact_email: z.string().email().optional(),
-  contact_phone: z.string().optional(),
-  is_active: z.boolean().optional()
-})
-
-const UpdateWarehouseSchema = CreateWarehouseSchema.partial()
 
 async function getWarehousesHandler(req: NextRequest) {
   try {
@@ -26,15 +11,75 @@ async function getWarehousesHandler(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const search = searchParams.get('search') || undefined
     const isActive = searchParams.get('isActive')
+    const statusParam = searchParams.get('status')
+    const typeParam = searchParams.get('type')
+
+    // Validate status and type if provided
+    let status = undefined
+    let type = undefined
+
+    if (statusParam) {
+      const statusResult = WarehouseStatusSchema.safeParse(statusParam)
+      if (!statusResult.success) {
+        return NextResponse.json(
+          { error: 'Invalid status value', details: statusResult.error.errors },
+          { status: 400 }
+        )
+      }
+      status = statusResult.data
+    }
+
+    if (typeParam) {
+      const typeResult = WarehouseTypeSchema.safeParse(typeParam)
+      if (!typeResult.success) {
+        return NextResponse.json(
+          { error: 'Invalid type value', details: typeResult.error.errors },
+          { status: 400 }
+        )
+      }
+      type = typeResult.data
+    }
 
     const result = await warehouseService.list({
       page,
       limit,
       search,
+      status,
+      type,
       isActive: isActive ? isActive === 'true' : undefined
     })
 
-    return NextResponse.json(result)
+    // Transform to snake_case for frontend consistency
+    const transformedWarehouses = result.warehouses.map((warehouse: any) => ({
+      id: warehouse.id,
+      name: warehouse.name,
+      code: warehouse.code,
+      type: warehouse.type,
+      status: warehouse.status,
+      is_active: warehouse.isActive,
+      location: warehouse.location,
+      fulfills_channels: warehouse.fulfillsChannels,
+      address_line1: warehouse.addressLine1,
+      address_line2: warehouse.addressLine2,
+      city: warehouse.city,
+      state_province: warehouse.stateProvince,
+      postal_code: warehouse.postalCode,
+      country: warehouse.country,
+      contact_name: warehouse.contactName,
+      contact_email: warehouse.contactEmail,
+      contact_phone: warehouse.contactPhone,
+      notes: warehouse.notes,
+      created_at: warehouse.createdAt,
+      updated_at: warehouse.updatedAt
+    }))
+
+    return NextResponse.json({
+      warehouses: transformedWarehouses,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
+    })
   } catch (error) {
     console.error('Error fetching warehouses:', error)
     return NextResponse.json(
@@ -57,6 +102,14 @@ async function createWarehouseHandler(req: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid input', details: error.errors },
         { status: 400 }
+      )
+    }
+
+    // Handle duplicate warehouse code error
+    if (error instanceof Error && error.message.includes('already exists')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 409 }
       )
     }
 

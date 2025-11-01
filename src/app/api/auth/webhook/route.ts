@@ -156,7 +156,7 @@ async function handle_user_created(evt: WebhookEvent) {
  * Updates existing user information in the database
  */
 async function handle_user_updated(evt: WebhookEvent) {
-  const { id, email_addresses, first_name, last_name, updated_at } = evt.data
+  const { id, email_addresses, first_name, last_name, updated_at, public_metadata } = evt.data
 
   // Get primary email address
   const primary_email = email_addresses?.find(email =>
@@ -167,7 +167,8 @@ async function handle_user_updated(evt: WebhookEvent) {
 
   // Find existing user
   const existing_user = await prisma.user.findUnique({
-    where: { clerk_id: id }
+    where: { clerk_id: id },
+    include: { userRoles: { include: { role: true } } }
   })
 
   if (!existing_user) {
@@ -185,6 +186,29 @@ async function handle_user_updated(evt: WebhookEvent) {
       updated_at: updated_at ? new Date(updated_at) : new Date(),
     },
   })
+
+  // Handle role update from metadata
+  const newRoleName = public_metadata?.role as string | undefined
+  if (newRoleName && newRoleName !== existing_user.userRoles[0]?.role.name) {
+    const newRole = await prisma.role.findFirst({ where: { name: newRoleName } })
+
+    if (newRole) {
+      await prisma.userRole.updateMany({
+        where: { userId: existing_user.id },
+        data: { isActive: false },
+      })
+
+      await prisma.userRole.create({
+        data: {
+          userId: existing_user.id,
+          roleId: newRole.id,
+          assigned_by: 'clerk_webhook',
+        },
+      })
+
+      console.log(`Updated role for user ${id} to ${newRoleName}`)
+    }
+  }
 
   // Log the user update event
   await prisma.auditLog.create({

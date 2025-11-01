@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Development Database
+  postgres-dev:
+    image: postgres:15
+    container_name: bookstock-dev-db
+    environment:
+      POSTGRES_USER: bookstock
+      POSTGRES_PASSWORD: bookstock_dev_password
+      POSTGRES_DB: bookstock_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookstock"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstock-network
+
+  # Test Database
+  postgres-test:
+    image: postgres:15
+    container_name: bookstock-test-db
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: bookstock_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstock-network
+
+volumes:
+  postgres-dev-data:
+    driver: local
+  postgres-test-data:
+    driver: local
+
+networks:
+  bookstock-network:
+    driver: bridge

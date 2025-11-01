@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/database'
@@ -103,7 +103,7 @@ export async function check_permission(permission: string): Promise<boolean> {
  */
 export async function get_db_user(clerk_id: string) {
   return await prisma.user.findUnique({
-    where: { clerk_id },
+    where: { clerkId: clerk_id },
     include: {
       userRoles: {
         include: {
@@ -128,18 +128,18 @@ export async function sync_user_to_database(clerk_user: any) {
 
   // Check if user already exists
   const existing_user = await prisma.user.findUnique({
-    where: { clerk_id: clerk_user.id }
+    where: { clerkId: clerk_user.id }
   })
 
   if (existing_user) {
     // Update existing user
     return await prisma.user.update({
-      where: { clerk_id: clerk_user.id },
+      where: { clerkId: clerk_user.id },
       data: {
         email,
-        first_name: clerk_user.firstName,
-        last_name: clerk_user.lastName,
-        updated_at: new Date(),
+        firstName: clerk_user.firstName,
+        lastName: clerk_user.lastName,
+        updatedAt: new Date(),
       },
       include: {
         userRoles: {
@@ -153,13 +153,13 @@ export async function sync_user_to_database(clerk_user: any) {
     // Create new user
     const new_user = await prisma.user.create({
       data: {
-        clerk_id: clerk_user.id,
+        clerkId: clerk_user.id,
         email,
-        first_name: clerk_user.firstName,
-        last_name: clerk_user.lastName,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
+        firstName: clerk_user.firstName,
+        lastName: clerk_user.lastName,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
       include: {
         userRoles: {
@@ -178,10 +178,10 @@ export async function sync_user_to_database(clerk_user: any) {
     if (default_role) {
       await prisma.userRole.create({
         data: {
-          user_id: new_user.id,
-          role_id: default_role.id,
-          assigned_at: new Date(),
-          assigned_by: 'system',
+          userId: new_user.id,
+          roleId: default_role.id,
+          assignedAt: new Date(),
+          assignedBy: 'system',
         },
       })
     }
@@ -196,14 +196,33 @@ export async function sync_user_to_database(clerk_user: any) {
  * @returns User info or throws error
  */
 export async function validate_api_auth(request: NextRequest) {
-  try {
-    const { userId, user } = await auth()
+  console.log('Starting API auth validation...');
+  console.log('Request URL:', request.url);
 
-    if (!userId || !user) {
+  try {
+    // Get auth from Clerk
+    const { userId } = await auth()
+    console.log('Auth userId:', userId);
+
+    if (!userId) {
+      console.log('No userId found, throwing Unauthorized error');
+      throw new Error('Unauthorized')
+    }
+
+    // Get full user object
+    const user = await currentUser()
+    console.log('Current user:', {
+      id: user?.id,
+      email: user?.emailAddresses[0]?.emailAddress
+    });
+
+    if (!user) {
+      console.log('User object not found, throwing Unauthorized error');
       throw new Error('Unauthorized')
     }
 
     const role = get_user_role(user) as UserRole
+    console.log(`User ID: ${userId}, Role: ${role}`)
 
     return {
       userId,
@@ -212,6 +231,7 @@ export async function validate_api_auth(request: NextRequest) {
       email: user.emailAddresses[0]?.emailAddress,
     }
   } catch (error) {
+    console.error('Error in validate_api_auth:', error);
     throw new Error('Unauthorized')
   }
 }
@@ -224,6 +244,8 @@ export async function validate_api_auth(request: NextRequest) {
  */
 export async function validate_api_permission(request: NextRequest, permission: string) {
   const auth_info = await validate_api_auth(request)
+
+  console.log(`Validating permission: ${permission} for role: ${auth_info.role}`)
 
   if (!has_permission(auth_info.role, permission)) {
     throw new Error('Forbidden')
