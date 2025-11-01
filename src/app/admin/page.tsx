@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Users, Shield, Settings, Loader2 } from 'lucide-react'
 import { PermissionGuard } from '@/components/auth/permission-guard'
+import { InviteUserForm } from '@/components/admin/invite-user-form'
 
 interface UserRole {
   id: string
@@ -96,7 +97,7 @@ export default function AdminPage() {
   }
 
   const getUserPrimaryRole = (user: AdminUser) => {
-    if (user.user_roles.length === 0) return 'No Role'
+    if (!user.user_roles || user.user_roles.length === 0) return 'No Role'
     return user.user_roles[0].role.name
   }
 
@@ -168,7 +169,7 @@ export default function AdminPage() {
                         Admin Users
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {users.filter((u) => u.user_roles.some(ur => ur.role.name === 'admin')).length}
+                        {users.filter((u) => u.user_roles?.some(ur => ur.role.name.toLowerCase() === 'admin')).length}
                       </dd>
                     </dl>
                   </div>
@@ -195,6 +196,11 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Invite User Form */}
+          <div className="mb-8">
+            <InviteUserForm onInviteSent={loadUsers} />
           </div>
 
           {/* User Management */}
@@ -260,7 +266,7 @@ export default function AdminPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
-                            {user.user_roles.length > 0 ? (
+                            {user.user_roles && user.user_roles.length > 0 ? (
                               user.user_roles.map((userRole) => (
                                 <span key={userRole.id} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                   {formatRole(userRole.role.name)}

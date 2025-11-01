@@ -16,7 +16,7 @@ async function getUserHandler(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await userService.findById(params.id)
+    const user = await userService.getUserWithRoles(params.id)
 
     if (!user) {
       return NextResponse.json(
@@ -28,8 +28,23 @@ async function getUserHandler(
     // Add effective permissions
     const effectivePermissions = await authorizationService.getEffectivePermissions(user.id)
 
+    // Transform userRoles array to snake_case
+    const userRoles = user.userRoles?.map((ur: any) => ({
+      id: ur.id,
+      role: {
+        id: ur.role.id,
+        name: ur.role.name
+      }
+    })) || []
+
     return NextResponse.json({
-      ...user,
+      id: user.id,
+      clerk_id: user.clerkId,
+      email: user.email,
+      first_name: user.firstName,
+      last_name: user.lastName,
+      is_active: user.isActive,
+      user_roles: userRoles,
       effectivePermissions
     })
   } catch (error) {
@@ -49,7 +64,15 @@ async function updateUserHandler(
     const body = await req.json()
     const data = UpdateUserSchema.parse(body)
 
-    const user = await userService.update(params.id, data)
+    // Map snake_case to camelCase for Prisma
+    const updateData = {
+      ...(data.email && { email: data.email }),
+      ...(data.first_name && { firstName: data.first_name }),
+      ...(data.last_name && { lastName: data.last_name }),
+      ...(data.is_active !== undefined && { isActive: data.is_active })
+    }
+
+    const user = await userService.updateUser(params.id, updateData)
 
     if (!user) {
       return NextResponse.json(
@@ -58,7 +81,15 @@ async function updateUserHandler(
       )
     }
 
-    return NextResponse.json(user)
+    // Transform to snake_case for response
+    return NextResponse.json({
+      id: user.id,
+      clerk_id: user.clerkId,
+      email: user.email,
+      first_name: user.firstName,
+      last_name: user.lastName,
+      is_active: user.isActive
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -81,7 +112,7 @@ async function deleteUserHandler(
 ) {
   try {
     // Don't actually delete users, just deactivate them
-    const user = await userService.update(params.id, { is_active: false })
+    const user = await userService.deactivateUser(params.id)
 
     if (!user) {
       return NextResponse.json(

@@ -28,28 +28,49 @@ async function getUsersHandler(req: NextRequest) {
     const isActive = searchParams.get('isActive')
     const roleId = searchParams.get('roleId') || undefined
 
-    const result = await userService.list({
+    const result = await userService.listUsers({
       page,
       limit,
       search,
       isActive: isActive ? isActive === 'true' : undefined,
-      roleId
+      includeRoles: true
     })
 
-    // Add effective permissions for each user
+    // Add effective permissions for each user and transform to snake_case
     const usersWithPermissions = await Promise.all(
-      result.data.map(async (user) => {
+      result.users.map(async (user: any) => {
         const effectivePermissions = await authorizationService.getEffectivePermissions(user.id)
+
+        // Transform userRoles array if it exists
+        const userRoles = user.userRoles?.map((ur: any) => ({
+          id: ur.id,
+          role: {
+            id: ur.role.id,
+            name: ur.role.name
+          }
+        })) || []
+
         return {
-          ...user,
+          id: user.id,
+          clerk_id: user.clerkId,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          is_active: user.isActive,
+          user_roles: userRoles,
           effectivePermissions
         }
       })
     )
 
     return NextResponse.json({
-      ...result,
-      data: usersWithPermissions
+      data: usersWithPermissions,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages
+      }
     })
   } catch (error) {
     console.error('Error fetching users:', error)
