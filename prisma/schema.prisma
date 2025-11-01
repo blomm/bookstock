@@ -27,10 +27,32 @@ model Series {
 model Warehouse {
   id               Int      @id @default(autoincrement())
   name             String   @db.VarChar(100)  // Turnaround, ACC, Flostream
-  code             String   @unique @db.VarChar(10)  // TRN, ACC, FLS
-  location         String   @db.VarChar(100)  // UK, US
-  fulfillsChannels Json     // ["UK_TRADE", "ROW_TRADE"] for Turnaround
+  code             String   @unique @db.VarChar(20)  // TRN, ACC, FLS - increased from 10
+  type             WarehouseType @default(PHYSICAL)
+  status           WarehouseStatus @default(ACTIVE)
   isActive         Boolean  @default(true) @map("is_active")
+
+  // Legacy field - kept for backward compatibility
+  location         String?  @db.VarChar(100)  // UK, US - now optional, superseded by address fields
+  fulfillsChannels Json?    // ["UK_TRADE", "ROW_TRADE"] for Turnaround - now optional
+
+  // Address fields
+  addressLine1     String?  @map("address_line1") @db.VarChar(255)
+  addressLine2     String?  @map("address_line2") @db.VarChar(255)
+  city             String?  @db.VarChar(100)
+  stateProvince    String?  @map("state_province") @db.VarChar(100)
+  postalCode       String?  @map("postal_code") @db.VarChar(20)
+  country          String?  @db.VarChar(2)  // ISO 3166-1 alpha-2
+
+  // Contact fields
+  contactName      String?  @map("contact_name") @db.VarChar(100)
+  contactEmail     String?  @map("contact_email") @db.VarChar(255)
+  contactPhone     String?  @map("contact_phone") @db.VarChar(20)
+
+  // Notes
+  notes            String?  @db.Text
+
+  // Timestamps
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -42,7 +64,20 @@ model Warehouse {
 
   @@map("warehouses")
   @@index([code])
+  @@index([status])
   @@index([isActive])
+}
+
+enum WarehouseType {
+  PHYSICAL
+  VIRTUAL
+  THIRD_PARTY
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
 }
 
 model Printer {

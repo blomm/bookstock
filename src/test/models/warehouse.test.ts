@@ -25,11 +25,69 @@ describe('Warehouse Model', () => {
         code: 'TRN',
         location: 'UK',
         fulfillsChannels: ['UK_TRADE_SALES', 'ROW_TRADE_SALES'],
-        isActive: true
+        isActive: true,
+        type: 'PHYSICAL',  // Default value
+        status: 'ACTIVE'   // Default value
       })
       expect(warehouse.id).toBeDefined()
       expect(warehouse.createdAt).toBeInstanceOf(Date)
       expect(warehouse.updatedAt).toBeInstanceOf(Date)
+    })
+
+    test('should create warehouse with extended address fields', async () => {
+      const warehouse = await testDb.warehouse.create({
+        data: {
+          name: 'UK Warehouse - London',
+          code: 'UK-LON',
+          type: 'PHYSICAL',
+          status: 'ACTIVE',
+          addressLine1: '123 Publishing Street',
+          city: 'London',
+          postalCode: 'EC1A 1BB',
+          country: 'GB',
+          contactEmail: 'uk@bookstock.example',
+          contactPhone: '+44 20 7946 0958'
+        }
+      })
+
+      expect(warehouse).toMatchObject({
+        name: 'UK Warehouse - London',
+        code: 'UK-LON',
+        type: 'PHYSICAL',
+        status: 'ACTIVE',
+        addressLine1: '123 Publishing Street',
+        city: 'London',
+        postalCode: 'EC1A 1BB',
+        country: 'GB',
+        contactEmail: 'uk@bookstock.example',
+        contactPhone: '+44 20 7946 0958'
+      })
+    })
+
+    test('should create virtual warehouse without address', async () => {
+      const warehouse = await testDb.warehouse.create({
+        data: {
+          name: 'Online Fulfillment Center',
+          code: 'ONLINE',
+          type: 'VIRTUAL',
+          status: 'ACTIVE',
+          notes: 'Virtual warehouse for online orders'
+        }
+      })
+
+      expect(warehouse.type).toBe('VIRTUAL')
+      expect(warehouse.addressLine1).toBeNull()
+      expect(warehouse.notes).toBe('Virtual warehouse for online orders')
+    })
+
+    test('should default warehouse type to PHYSICAL', async () => {
+      const warehouse = await createTestWarehouse({ code: 'DEF' })
+      expect(warehouse.type).toBe('PHYSICAL')
+    })
+
+    test('should default warehouse status to ACTIVE', async () => {
+      const warehouse = await createTestWarehouse({ code: 'STA' })
+      expect(warehouse.status).toBe('ACTIVE')
     })
 
     test('should create all three main warehouses', async () => {
@@ -107,7 +165,7 @@ describe('Warehouse Model', () => {
     })
 
     test('should enforce code length constraints', async () => {
-      const longCode = 'a'.repeat(11)
+      const longCode = 'a'.repeat(21) // VARCHAR(20) so 21 chars should fail
       await expect(
         createTestWarehouse({ code: longCode })
       ).rejects.toThrow()
@@ -131,6 +189,38 @@ describe('Warehouse Model', () => {
       })
 
       expect(warehouse.fulfillsChannels).toEqual([])
+    })
+
+    test('should validate warehouse type enum', async () => {
+      const physical = await testDb.warehouse.create({
+        data: { name: 'Physical WH', code: 'PHY', type: 'PHYSICAL' }
+      })
+      const virtual = await testDb.warehouse.create({
+        data: { name: 'Virtual WH', code: 'VIR', type: 'VIRTUAL' }
+      })
+      const thirdParty = await testDb.warehouse.create({
+        data: { name: 'Third Party WH', code: 'TPW', type: 'THIRD_PARTY' }
+      })
+
+      expect(physical.type).toBe('PHYSICAL')
+      expect(virtual.type).toBe('VIRTUAL')
+      expect(thirdParty.type).toBe('THIRD_PARTY')
+    })
+
+    test('should validate warehouse status enum', async () => {
+      const active = await testDb.warehouse.create({
+        data: { name: 'Active WH', code: 'ACT', status: 'ACTIVE' }
+      })
+      const inactive = await testDb.warehouse.create({
+        data: { name: 'Inactive WH', code: 'INA', status: 'INACTIVE' }
+      })
+      const maintenance = await testDb.warehouse.create({
+        data: { name: 'Maintenance WH', code: 'MNT', status: 'MAINTENANCE' }
+      })
+
+      expect(active.status).toBe('ACTIVE')
+      expect(inactive.status).toBe('INACTIVE')
+      expect(maintenance.status).toBe('MAINTENANCE')
     })
   })
 
@@ -184,6 +274,50 @@ describe('Warehouse Model', () => {
         'Alpha Warehouse',
         'Zebra Warehouse'
       ])
+    })
+
+    test('should filter by warehouse status', async () => {
+      await testDb.warehouse.create({
+        data: { name: 'Active WH', code: 'ACT1', status: 'ACTIVE' }
+      })
+      await testDb.warehouse.create({
+        data: { name: 'Inactive WH', code: 'INA1', status: 'INACTIVE' }
+      })
+      await testDb.warehouse.create({
+        data: { name: 'Maintenance WH', code: 'MNT1', status: 'MAINTENANCE' }
+      })
+
+      const activeWarehouses = await testDb.warehouse.findMany({
+        where: { status: 'ACTIVE' }
+      })
+      const inactiveWarehouses = await testDb.warehouse.findMany({
+        where: { status: 'INACTIVE' }
+      })
+
+      expect(activeWarehouses).toHaveLength(1)
+      expect(activeWarehouses[0].name).toBe('Active WH')
+      expect(inactiveWarehouses).toHaveLength(1)
+      expect(inactiveWarehouses[0].name).toBe('Inactive WH')
+    })
+
+    test('should filter by warehouse type', async () => {
+      await testDb.warehouse.create({
+        data: { name: 'Physical WH', code: 'PHY1', type: 'PHYSICAL' }
+      })
+      await testDb.warehouse.create({
+        data: { name: 'Virtual WH', code: 'VIR1', type: 'VIRTUAL' }
+      })
+
+      const physicalWarehouses = await testDb.warehouse.findMany({
+        where: { type: 'PHYSICAL' }
+      })
+      const virtualWarehouses = await testDb.warehouse.findMany({
+        where: { type: 'VIRTUAL' }
+      })
+
+      expect(physicalWarehouses.length).toBeGreaterThan(0)
+      expect(virtualWarehouses).toHaveLength(1)
+      expect(virtualWarehouses[0].name).toBe('Virtual WH')
     })
   })
 
