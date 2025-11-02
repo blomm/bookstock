@@ -1,6 +1,6 @@
 # Product Roadmap
 
-## Phase 1: Core Inventory Management
+## Phase 1: Core Inventory Management ✅ COMPLETE
 
 **Goal:** Establish foundational inventory tracking system for titles and warehouses
 **Success Criteria:** Complete title catalog management with real-time stock levels across all warehouses
@@ -9,8 +9,8 @@
 
 - [x] Title Management System - Create, edit, and manage book catalog with ISBN, author, format, RRP, unit cost `M` **COMPLETED 2025-10-15**
 - [x] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S` **COMPLETED 2025-11-01**
-- [ ] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
-- [ ] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
+- [x] Stock Level Tracking - Real-time inventory levels per title per warehouse `L` **COMPLETED 2025-11-02**
+- [x] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M` **COMPLETED 2025-11-02**
 - [x] Series Management - Group titles by series (e.g., "Opinionated Guides") `S` **COMPLETED 2025-11-02**
 - [x] User Authentication - Secure login system with role-based access control `M` **COMPLETED 2025-10-12**
 
