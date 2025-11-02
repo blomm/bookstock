@@ -11,7 +11,7 @@
 - [x] Multi-Warehouse Setup - Configure UK, US, and online fulfillment warehouse entities `S` **COMPLETED 2025-11-01**
 - [ ] Stock Level Tracking - Real-time inventory levels per title per warehouse `L`
 - [ ] Basic Stock Movements - Record printing, reprints, and inter-warehouse transfers `M`
-- [ ] Series Management - Group titles by series (e.g., "Opinionated Guides") `S`
+- [x] Series Management - Group titles by series (e.g., "Opinionated Guides") `S` **COMPLETED 2025-11-02**
 - [x] User Authentication - Secure login system with role-based access control `M` **COMPLETED 2025-10-12**
 
 ### Dependencies

@@ -63,9 +63,18 @@ describe('StockMovement Model', () => {
       expect(movement.notes).toBe('Transfer from UK to US warehouse for increased demand')
     })
 
-    test('should create print received movement with printer name', async () => {
+    test('should create print received movement with printer', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'PRT' })
+
+      // Create a printer
+      const printer = await testDb.printer.create({
+        data: {
+          name: 'Lightning Source UK',
+          code: 'LSUK',
+          location: 'UK'
+        }
+      })
 
       const movement = await testDb.stockMovement.create({
         data: {
@@ -74,12 +83,12 @@ describe('StockMovement Model', () => {
           movementType: 'PRINT_RECEIVED',
           quantity: 4000,
           movementDate: new Date('2024-01-10'),
-          printerName: 'Lightning Source UK',
+          printerId: printer.id,
           referenceNumber: 'PRINT-2024-0115'
         }
       })
 
-      expect(movement.printerName).toBe('Lightning Source UK')
+      expect(movement.printerId).toBe(printer.id)
       expect(movement.referenceNumber).toBe('PRINT-2024-0115')
     })
   })
@@ -322,7 +331,7 @@ describe('StockMovement Model', () => {
       expect(movementWithAll?.warehouse.name).toBe('Destination Warehouse')
     })
 
-    test('should handle cascade deletion from title', async () => {
+    test('should prevent deletion of title with stock movements', async () => {
       const title = await createTestTitle({ isbn: '9781111111111' })
       const warehouse = await createTestWarehouse({ code: 'CAS' })
 
@@ -336,15 +345,12 @@ describe('StockMovement Model', () => {
         }
       })
 
-      await testDb.title.delete({
-        where: { id: title.id }
-      })
-
-      const remainingMovements = await testDb.stockMovement.findMany({
-        where: { titleId: title.id }
-      })
-
-      expect(remainingMovements).toHaveLength(0)
+      // Should fail due to foreign key constraint
+      await expect(
+        testDb.title.delete({
+          where: { id: title.id }
+        })
+      ).rejects.toThrow('Foreign key constraint')
     })
   })
 
@@ -667,6 +673,15 @@ describe('StockMovement Model', () => {
       })
       const warehouse = await createTestWarehouse({ code: 'RPT' })
 
+      // Create a printer
+      const printer = await testDb.printer.create({
+        data: {
+          name: 'Lightning Source UK',
+          code: 'LSUK',
+          location: 'UK'
+        }
+      })
+
       // Initial print run
       await testDb.stockMovement.create({
         data: {
@@ -675,7 +690,7 @@ describe('StockMovement Model', () => {
           movementType: 'PRINT_RECEIVED',
           quantity: 3000,
           movementDate: new Date('2024-01-01'),
-          printerName: 'Lightning Source UK',
+          printerId: printer.id,
           referenceNumber: 'INITIAL-PRINT-001'
         }
       })
@@ -722,7 +737,7 @@ describe('StockMovement Model', () => {
           movementType: 'PRINT_RECEIVED',
           quantity: 3000,
           movementDate: new Date('2024-03-01'),
-          printerName: 'Lightning Source UK',
+          printerId: printer.id,
           referenceNumber: 'REPRINT-001',
           notes: 'Reprint triggered by low stock alert'
         }
