@@ -13,7 +13,7 @@ const AdjustmentSchema = z.object({
 
 async function adjustInventoryHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json()

@@ -22,7 +22,7 @@ const AdjustmentSchema = z.object({
 
 async function getInventoryHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const inventory = await inventoryService.findById(params.id)
@@ -46,7 +46,7 @@ async function getInventoryHandler(
 
 async function updateInventoryHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json()
@@ -80,7 +80,7 @@ async function updateInventoryHandler(
 
 async function deleteInventoryHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const deleted = await inventoryService.delete(params.id)

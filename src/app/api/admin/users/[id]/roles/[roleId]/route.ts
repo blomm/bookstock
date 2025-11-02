@@ -5,9 +5,11 @@ import { authorizationService } from '@/services/authorizationService'
 
 async function removeRoleHandler(
   req: NextRequest,
-  { params }: { params: { id: string; roleId: string } }
+  { params }: { params: Promise<{ id: string; roleId: string }> }
 ) {
   try {
+    const { id, roleId } = await params
+
     // Check if the current user can remove this role
     const currentUserId = req.user?.id
     if (!currentUserId) {
@@ -30,7 +32,7 @@ async function removeRoleHandler(
       )
     }
 
-    const removed = await userService.removeRole(params.id, params.roleId)
+    const removed = await userService.removeRole(id, roleId)
 
     if (!removed) {
       return NextResponse.json(

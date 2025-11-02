@@ -6,10 +6,11 @@ import { z } from 'zod'
 
 async function getWarehouseHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
     if (isNaN(id)) {
       return NextResponse.json(
         { error: 'Invalid warehouse ID' },
@@ -38,10 +39,11 @@ async function getWarehouseHandler(
 
 async function updateWarehouseHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
     if (isNaN(id)) {
       return NextResponse.json(
         { error: 'Invalid warehouse ID' },
@@ -89,10 +91,11 @@ async function updateWarehouseHandler(
 
 async function deleteWarehouseHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
     if (isNaN(id)) {
       return NextResponse.json(
         { error: 'Invalid warehouse ID' },

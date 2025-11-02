@@ -21,10 +21,11 @@ import { z } from 'zod'
  */
 async function updateStockThresholdHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
 
     if (isNaN(id) || id <= 0) {
       return NextResponse.json(

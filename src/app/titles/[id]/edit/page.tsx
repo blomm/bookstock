@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
-import { useEffect } from 'react'
+import { useEffect, use } from 'react'
 import useSWR from 'swr'
 import { TitleForm } from '@/components/titles/TitleForm'
 import { UserMenu } from '@/components/auth/user-menu'
@@ -56,10 +56,13 @@ const fetcher = async (url: string) => {
   return res.json()
 }
 
-export default function EditTitlePage({ params }: { params: { id: string } }) {
+export default function EditTitlePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { isSignedIn, isLoaded } = useAuth()
-  const titleId = parseInt(params.id, 10)
+
+  // Unwrap params Promise as required by Next.js 15
+  const { id } = use(params)
+  const titleId = parseInt(id, 10)
 
   // Fetch title data
   const { data: title, error, isLoading } = useSWR<Title>(

@@ -13,7 +13,7 @@ const UpdateUserSchema = z.object({
 
 async function getUserHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await userService.getUserWithRoles(params.id)
@@ -58,7 +58,7 @@ async function getUserHandler(
 
 async function updateUserHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json()
@@ -108,7 +108,7 @@ async function updateUserHandler(
 
 async function deleteUserHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Don't actually delete users, just deactivate them

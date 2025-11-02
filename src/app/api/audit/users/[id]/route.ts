@@ -13,7 +13,7 @@ const UserAuditQuerySchema = z.object({
 
 async function getUserAuditLogsHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { searchParams } = new URL(req.url)

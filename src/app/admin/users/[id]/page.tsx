@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
@@ -26,7 +26,7 @@ interface User {
   }>
 }
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { isLoaded, isSignedIn } = useAuth()
   const [user, setUser] = useState<User | null>(null)
@@ -36,6 +36,9 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  // Unwrap params Promise as required by Next.js 15
+  const { id } = use(params)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -49,7 +52,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         setLoading(true)
 
         // Fetch user details
-        const userResponse = await fetch(`/api/admin/users/${params.id}`)
+        const userResponse = await fetch(`/api/admin/users/${id}`)
         if (!userResponse.ok) {
           throw new Error('Failed to fetch user')
         }
@@ -79,7 +82,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     if (isSignedIn) {
       fetchData()
     }
-  }, [params.id, isSignedIn])
+  }, [id, isSignedIn])
 
   const handleSave = async () => {
     if (!selectedRoleId) {
@@ -91,7 +94,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
       setSaving(true)
       setError(null)
 
-      const response = await fetch(`/api/admin/users/${params.id}/roles`, {
+      const response = await fetch(`/api/admin/users/${id}/roles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

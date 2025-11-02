@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import useSWR from 'swr'
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
@@ -120,15 +120,18 @@ const formatPercentage = (value: string | null) => {
   return `${parseFloat(value).toFixed(2)}%`
 }
 
-export default function TitleDetailPage({ params }: { params: { id: string } }) {
+export default function TitleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  // Unwrap params Promise as required by Next.js 15
+  const { id } = use(params)
+
   const { data: title, error, isLoading } = useSWR<TitleDetail>(
-    isSignedIn ? `/api/titles/${params.id}` : null,
+    isSignedIn ? `/api/titles/${id}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -141,7 +144,7 @@ export default function TitleDetailPage({ params }: { params: { id: string } }) 
     setDeleteError(null)
 
     try {
-      const res = await fetch(`/api/titles/${params.id}`, {
+      const res = await fetch(`/api/titles/${id}`, {
         method: 'DELETE',
       })
 

@@ -11,7 +11,7 @@ const AssignRoleSchema = z.object({
 
 async function getUserRolesHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const roles = await authorizationService.getUserRoles(params.id)
@@ -28,7 +28,7 @@ async function getUserRolesHandler(
 
 async function assignRoleHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json()

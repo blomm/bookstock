@@ -6,6 +6,7 @@ import { WarehouseForm } from '@/components/warehouses/WarehouseForm'
 import { UserMenu } from '@/components/auth/user-menu'
 import { PermissionGuard } from '@/components/auth/permission-guard'
 import useSWR from 'swr'
+import { use } from 'react'
 
 const fetcher = async (url: string) => {
   const res = await fetch(url)
@@ -15,10 +16,13 @@ const fetcher = async (url: string) => {
   return res.json()
 }
 
-export default function EditWarehousePage({ params }: { params: { id: string } }) {
+export default function EditWarehousePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { isSignedIn, isLoaded } = useAuth()
-  const warehouseId = parseInt(params.id)
+
+  // Unwrap params Promise as required by Next.js 15
+  const { id } = use(params)
+  const warehouseId = parseInt(id)
 
   const { data: warehouse, error, isLoading } = useSWR(
     isSignedIn ? `/api/warehouses/${warehouseId}` : null,

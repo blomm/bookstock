@@ -18,10 +18,11 @@ import { z } from 'zod'
  */
 async function getTitleHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
 
     if (isNaN(id) || id <= 0) {
       return NextResponse.json(
@@ -75,10 +76,11 @@ async function getTitleHandler(
  */
 async function updateTitleHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
 
     if (isNaN(id) || id <= 0) {
       return NextResponse.json(
@@ -168,10 +170,11 @@ async function updateTitleHandler(
  */
 async function deleteTitleHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId)
 
     if (isNaN(id) || id <= 0) {
       return NextResponse.json(

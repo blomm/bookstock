@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { UserMenu } from '@/components/auth/user-menu'
 import { PermissionGuard } from '@/components/auth/permission-guard'
 import useSWR from 'swr'
-import { useState } from 'react'
+import { useState, use } from 'react'
 
 const fetcher = async (url: string) => {
   const res = await fetch(url)
@@ -15,10 +15,13 @@ const fetcher = async (url: string) => {
   return res.json()
 }
 
-export default function WarehouseDetailPage({ params }: { params: { id: string } }) {
+export default function WarehouseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { isSignedIn, isLoaded } = useAuth()
-  const warehouseId = parseInt(params.id)
+
+  // Unwrap params Promise as required by Next.js 15
+  const { id } = use(params)
+  const warehouseId = parseInt(id)
   const [isUpdating, setIsUpdating] = useState(false)
 
   const { data: warehouse, error, isLoading, mutate } = useSWR(

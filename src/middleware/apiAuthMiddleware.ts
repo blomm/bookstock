@@ -19,16 +19,21 @@ type AuthenticatedRequest = NextRequest & {
   }
 }
 
-export function apiAuthMiddleware(
-  handler: (req: AuthenticatedRequest) => Promise<NextResponse>,
+// Next.js 15 route handler context type
+type RouteContext<T = any> = {
+  params: Promise<T>
+}
+
+export function apiAuthMiddleware<T = any>(
+  handler: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>,
   requiredPermissions: string[] = [],
   options: AuthMiddlewareOptions = {}
 ) {
-  return async (req: AuthenticatedRequest): Promise<NextResponse> => {
+  return async (req: AuthenticatedRequest, context: RouteContext<T>): Promise<NextResponse> => {
     try {
       // Skip authentication if explicitly requested (for public routes)
       if (options.skipAuth) {
-        return await handler(req)
+        return await handler(req, context)
       }
 
       // Validate authentication
@@ -85,7 +90,7 @@ export function apiAuthMiddleware(
       }
 
       // Execute the protected handler
-      const response = await handler(req)
+      const response = await handler(req, context)
 
       // Create audit log if enabled
       if (options.enableAuditLog && options.action) {
@@ -147,36 +152,36 @@ async function createAuditLogSafely(
   }
 }
 
-export function requireAuth(
-  handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+export function requireAuth<T = any>(
+  handler: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>
 ) {
   return apiAuthMiddleware(handler)
 }
 
-export function requirePermission(
+export function requirePermission<T = any>(
   permission: string,
-  handler: (req: AuthenticatedRequest) => Promise<NextResponse>,
+  handler: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>,
   options?: AuthMiddlewareOptions
 ) {
   return apiAuthMiddleware(handler, [permission], options)
 }
 
-export function requireAnyPermission(
+export function requireAnyPermission<T = any>(
   permissions: string[],
-  handler: (req: AuthenticatedRequest) => Promise<NextResponse>,
+  handler: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>,
   options?: AuthMiddlewareOptions
 ) {
   return apiAuthMiddleware(handler, permissions, options)
 }
 
-export function withAuditLog(
+export function withAuditLog<T = any>(
   action: string,
   resource?: string,
-  handler?: (req: AuthenticatedRequest) => Promise<NextResponse>
+  handler?: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>
 ) {
   if (!handler) {
     // Return a decorator function
-    return (actualHandler: (req: AuthenticatedRequest) => Promise<NextResponse>) =>
+    return (actualHandler: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>) =>
       apiAuthMiddleware(actualHandler, [], {
         enableAuditLog: true,
         action,
