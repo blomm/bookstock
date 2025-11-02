@@ -96,7 +96,9 @@ export class SeriesService {
       status,
       search,
       page = 1,
-      limit = 20
+      limit = 20,
+      sortBy = 'name',
+      sortOrder = 'asc'
     } = filters
 
     // Build where clause
@@ -109,12 +111,30 @@ export class SeriesService {
       where.status = status
     }
 
-    // Search by name
+    // Search by name or description
     if (search) {
-      where.name = {
-        contains: search,
-        mode: 'insensitive'
-      }
+      where.OR = [
+        {
+          name: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          description: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        }
+      ]
+    }
+
+    // Build orderBy clause
+    const orderBy: Prisma.SeriesOrderByWithRelationInput = {}
+    if (sortBy === 'name') {
+      orderBy.name = sortOrder
+    } else if (sortBy === 'createdAt') {
+      orderBy.createdAt = sortOrder
     }
 
     // Calculate pagination
@@ -126,7 +146,7 @@ export class SeriesService {
         where,
         skip,
         take: limit,
-        orderBy: { name: 'asc' },
+        orderBy,
         include: {
           _count: {
             select: { titles: true }
@@ -191,6 +211,11 @@ export class SeriesService {
     organizationId: string,
     data: UpdateSeriesInput
   ): Promise<Series> {
+    // Validate that at least one field is being updated
+    if (Object.keys(data).length === 0) {
+      throw new Error('No fields to update')
+    }
+
     // Verify series exists and belongs to organization
     const existing = await prisma.series.findFirst({
       where: {
@@ -220,6 +245,37 @@ export class SeriesService {
       }
       throw error
     }
+  }
+
+  /**
+   * Delete a series (hard delete - only allowed if no titles)
+   */
+  async deleteSeries(seriesId: number, organizationId: string): Promise<void> {
+    // Verify series exists and belongs to organization
+    const existing = await prisma.series.findFirst({
+      where: {
+        id: seriesId,
+        organizationId
+      },
+      include: {
+        _count: {
+          select: { titles: true }
+        }
+      }
+    })
+
+    if (!existing) {
+      throw new Error('Series not found')
+    }
+
+    // Check if series has any titles
+    if (existing._count.titles > 0) {
+      throw new Error('Cannot delete series with associated titles. Please remove all titles first or use archive instead.')
+    }
+
+    await prisma.series.delete({
+      where: { id: seriesId }
+    })
   }
 
   /**
