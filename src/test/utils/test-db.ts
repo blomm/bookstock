@@ -54,6 +54,8 @@ export const createTestSeries = async (data?: Partial<any>) => {
     data: {
       name: uniqueName,
       description: 'A test series for unit testing',
+      organizationId: 'org_test_default',
+      status: 'ACTIVE',
       ...data
     }
   })

@@ -11,17 +11,27 @@ datasource db {
 }
 
 model Series {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(255)
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id             Int          @id @default(autoincrement())
+  name           String       @db.VarChar(100)
+  description    String?      @db.Text
+  status         SeriesStatus @default(ACTIVE)
+  organizationId String       @map("organization_id") @db.VarChar(255)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdBy      String?      @map("created_by") @db.VarChar(255)
 
   // Relationships
-  titles      Title[]
+  titles Title[]
 
+  @@unique([organizationId, name])
   @@map("series")
-  @@index([name])
+  @@index([organizationId, status], name: "idx_series_organization")
+  @@index([organizationId, name], name: "idx_series_name")
+}
+
+enum SeriesStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 model Warehouse {
@@ -141,7 +151,7 @@ model Title {
 
   // Relationships
   seriesId        Int?      @map("series_id")
-  series          Series?   @relation(fields: [seriesId], references: [id])
+  series          Series?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   inventory       Inventory[]
   stockMovements  StockMovement[]
   priceHistory    PriceHistory[]
