@@ -64,11 +64,7 @@ export class InventoryService {
    * Optionally filter by warehouse
    */
   async getLowStockItems(warehouseId?: number): Promise<InventoryWithRelations[]> {
-    const where: Prisma.InventoryWhereInput = {
-      title: {
-        lowStockThreshold: { not: null }
-      }
-    }
+    const where: Prisma.InventoryWhereInput = {}
 
     if (warehouseId !== undefined) {
       where.warehouseId = warehouseId

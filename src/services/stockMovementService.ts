@@ -223,7 +223,9 @@ export class StockMovementService {
       include: {
         title: true,
         warehouse: true,
-        creator: true
+        sourceWarehouse: true,
+        destinationWarehouse: true,
+        printer: true
       },
       orderBy: {
         movementDate: 'desc'

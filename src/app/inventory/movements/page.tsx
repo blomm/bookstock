@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import useSWR from 'swr'
+import useSWR, { mutate } from 'swr'
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { UserMenu } from '@/components/auth/user-menu'
+import { StockMovementModal } from '@/components/inventory/StockMovementModal'
 import { format } from 'date-fns'
 import { MovementType } from '@prisma/client'
 
@@ -74,6 +75,7 @@ export default function StockMovementsPage() {
   const [movementTypeFilter, setMovementTypeFilter] = useState<MovementType | ''>('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [showMovementModal, setShowMovementModal] = useState(false)
 
   // Build query string
   const queryParams = useMemo(() => {
@@ -197,6 +199,17 @@ export default function StockMovementsPage() {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="mb-4">
+            <button
+              onClick={() => router.push('/inventory')}
+              className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
+            >
+              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Inventory
+            </button>
+          </div>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Stock Movements</h1>
@@ -206,13 +219,13 @@ export default function StockMovementsPage() {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.push('/inventory')}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+                onClick={() => setShowMovementModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Back to Dashboard
+                Create Movement
               </button>
               <UserMenu />
             </div>
@@ -490,6 +503,17 @@ export default function StockMovementsPage() {
           </div>
         )}
       </main>
+
+      {/* Stock Movement Modal */}
+      <StockMovementModal
+        isOpen={showMovementModal}
+        onClose={() => setShowMovementModal(false)}
+        onSuccess={() => {
+          setShowMovementModal(false)
+          // Revalidate the movements list
+          mutate(`/api/stock-movements?${queryParams}`)
+        }}
+      />
     </div>
   )
 }
