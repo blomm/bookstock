@@ -101,7 +101,7 @@ export function StockMovementModal({
   if (!isOpen) return null
 
   const titles = titlesData?.data || []
-  const warehouses = warehousesData?.data || []
+  const warehouses = warehousesData?.warehouses || []
 
   return (
     <div className="fixed z-10 inset-0 overflow-y-auto">
