@@ -87,6 +87,8 @@ export async function POST(req: NextRequest) {
  * Creates a new user in the database and assigns default role
  */
 async function handle_user_created(evt: WebhookEvent) {
+  if (evt.type !== 'user.created') return
+
   const { id, email_addresses, first_name, last_name, created_at } = evt.data
 
   // Get primary email address
@@ -103,13 +105,13 @@ async function handle_user_created(evt: WebhookEvent) {
   // Create user in database
   const user = await prisma.user.create({
     data: {
-      clerk_id: id,
+      clerkId: id,
       email: primary_email,
-      first_name: first_name || null,
-      last_name: last_name || null,
-      is_active: true,
-      created_at: created_at ? new Date(created_at) : new Date(),
-      updated_at: new Date(),
+      firstName: first_name || null,
+      lastName: last_name || null,
+      isActive: true,
+      createdAt: created_at ? new Date(created_at) : new Date(),
+      updatedAt: new Date(),
     },
   })
 
@@ -121,10 +123,10 @@ async function handle_user_created(evt: WebhookEvent) {
   if (default_role) {
     await prisma.userRole.create({
       data: {
-        user_id: user.id,
-        role_id: default_role.id,
-        assigned_at: new Date(),
-        assigned_by: 'system',
+        userId: user.id,
+        roleId: default_role.id,
+        assignedAt: new Date(),
+        assignedBy: 'system',
       },
     })
 
@@ -136,15 +138,15 @@ async function handle_user_created(evt: WebhookEvent) {
   // Log the user creation event
   await prisma.auditLog.create({
     data: {
-      user_id: user.id,
+      userId: user.id,
       action: 'user_created',
       details: {
         clerk_id: id,
         email: primary_email,
         source: 'clerk_webhook'
       },
-      ip_address: null,
-      user_agent: 'Clerk Webhook',
+      ipAddress: null,
+      userAgent: 'Clerk Webhook',
       timestamp: new Date(),
     },
   })
@@ -157,6 +159,8 @@ async function handle_user_created(evt: WebhookEvent) {
  * Updates existing user information in the database
  */
 async function handle_user_updated(evt: WebhookEvent) {
+  if (evt.type !== 'user.updated') return
+
   const { id, email_addresses, first_name, last_name, updated_at, public_metadata } = evt.data
 
   // Get primary email address
@@ -168,7 +172,7 @@ async function handle_user_updated(evt: WebhookEvent) {
 
   // Find existing user
   const existing_user = await prisma.user.findUnique({
-    where: { clerk_id: id },
+    where: { clerkId: id },
     include: { userRoles: { include: { role: true } } }
   })
 
@@ -179,12 +183,12 @@ async function handle_user_updated(evt: WebhookEvent) {
 
   // Update user in database
   const updated_user = await prisma.user.update({
-    where: { clerk_id: id },
+    where: { clerkId: id },
     data: {
       email: primary_email || existing_user.email,
-      first_name: first_name !== undefined ? first_name : existing_user.first_name,
-      last_name: last_name !== undefined ? last_name : existing_user.last_name,
-      updated_at: updated_at ? new Date(updated_at) : new Date(),
+      firstName: first_name !== undefined ? first_name : existing_user.firstName,
+      lastName: last_name !== undefined ? last_name : existing_user.lastName,
+      updatedAt: updated_at ? new Date(updated_at) : new Date(),
     },
   })
 
@@ -203,7 +207,7 @@ async function handle_user_updated(evt: WebhookEvent) {
         data: {
           userId: existing_user.id,
           roleId: newRole.id,
-          assigned_by: 'clerk_webhook',
+          assignedBy: 'clerk_webhook',
         },
       })
 
@@ -214,15 +218,15 @@ async function handle_user_updated(evt: WebhookEvent) {
   // Log the user update event
   await prisma.auditLog.create({
     data: {
-      user_id: updated_user.id,
+      userId: updated_user.id,
       action: 'user_updated',
       details: {
         clerk_id: id,
         email: primary_email,
         source: 'clerk_webhook'
       },
-      ip_address: null,
-      user_agent: 'Clerk Webhook',
+      ipAddress: null,
+      userAgent: 'Clerk Webhook',
       timestamp: new Date(),
     },
   })
@@ -235,13 +239,15 @@ async function handle_user_updated(evt: WebhookEvent) {
  * Soft deletes user from the database (preserves audit logs)
  */
 async function handle_user_deleted(evt: WebhookEvent) {
+  if (evt.type !== 'user.deleted') return
+
   const { id } = evt.data
 
   console.log(`Deleting user from database: ${id}`)
 
   // Find existing user
   const existing_user = await prisma.user.findUnique({
-    where: { clerk_id: id }
+    where: { clerkId: id }
   })
 
   if (!existing_user) {
@@ -251,25 +257,24 @@ async function handle_user_deleted(evt: WebhookEvent) {
 
   // Soft delete user (preserve audit logs)
   await prisma.user.update({
-    where: { clerk_id: id },
+    where: { clerkId: id },
     data: {
-      is_active: false,
-      deleted_at: new Date(),
-      updated_at: new Date(),
+      isActive: false,
+      updatedAt: new Date(),
     },
   })
 
   // Log the user deletion event
   await prisma.auditLog.create({
     data: {
-      user_id: existing_user.id,
+      userId: existing_user.id,
       action: 'user_deleted',
       details: {
         clerk_id: id,
         source: 'clerk_webhook'
       },
-      ip_address: null,
-      user_agent: 'Clerk Webhook',
+      ipAddress: null,
+      userAgent: 'Clerk Webhook',
       timestamp: new Date(),
     },
   })
