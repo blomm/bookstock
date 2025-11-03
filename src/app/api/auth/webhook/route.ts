@@ -18,9 +18,10 @@ export async function POST(req: NextRequest) {
   const body = await req.text()
 
   // Get the headers
-  const svix_id = headers().get('svix-id')
-  const svix_timestamp = headers().get('svix-timestamp')
-  const svix_signature = headers().get('svix-signature')
+  const headersList = await headers()
+  const svix_id = headersList.get('svix-id')
+  const svix_timestamp = headersList.get('svix-timestamp')
+  const svix_signature = headersList.get('svix-signature')
 
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
