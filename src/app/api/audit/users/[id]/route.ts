@@ -22,10 +22,7 @@ async function getUserAuditLogsHandler(
 
     const filters = UserAuditQuerySchema.parse(queryParams)
 
-    const result = await auditLogService.getAuditLogs({
-      ...filters,
-      userId: parseInt(id)
-    })
+    const result = await auditLogService.getUserLogs(id, filters)
 
     return NextResponse.json(result)
   } catch (error) {

@@ -20,7 +20,7 @@ async function getAuditLogsHandler(req: NextRequest) {
 
     const filters = AuditQuerySchema.parse(queryParams)
 
-    const result = await auditLogService.getAuditLogs(filters)
+    const result = await auditLogService.listLogs(filters)
 
     return NextResponse.json(result)
   } catch (error) {
