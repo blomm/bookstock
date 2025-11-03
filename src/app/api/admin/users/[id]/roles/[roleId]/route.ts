@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission } from '@/middleware/apiAuthMiddleware'
+import { NextResponse } from 'next/server'
+import { requirePermission, AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
 
 async function removeRoleHandler(
-  req: NextRequest,
+  req: AuthenticatedRequest,
   { params }: { params: Promise<{ id: string; roleId: string }> }
 ) {
   try {
