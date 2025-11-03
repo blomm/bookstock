@@ -86,7 +86,7 @@ async function createUserHandler(req: NextRequest) {
     const body = await req.json()
     const data = CreateUserSchema.parse(body)
 
-    const user = await userService.create(data)
+    const user = await userService.createUser(data)
 
     return NextResponse.json(user, { status: 201 })
   } catch (error) {
