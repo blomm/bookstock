@@ -4,7 +4,7 @@ import { auditLogService } from '@/services/auditLogService'
 import { z } from 'zod'
 
 const AuditQuerySchema = z.object({
-  userId: z.string().optional().transform(val => val ? parseInt(val) : undefined),
+  userId: z.string().optional(),
   action: z.string().optional(),
   resource: z.string().optional(),
   startDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
