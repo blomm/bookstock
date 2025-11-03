@@ -119,12 +119,6 @@ export default function InventoryDashboardPage() {
     fetcher
   )
 
-  // Redirect to sign-in if not authenticated
-  if (isLoaded && !isSignedIn) {
-    router.push('/sign-in')
-    return null
-  }
-
   // Filter inventory client-side for search and low stock
   const filteredInventory = useMemo(() => {
     if (!data?.data) return []
@@ -196,6 +190,12 @@ export default function InventoryDashboardPage() {
     mutate(`/api/inventory/dashboard?${queryParams}`)
     setShowMovementModal(false)
     setSelectedItem(null)
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (isLoaded && !isSignedIn) {
+    router.push('/sign-in')
+    return null
   }
 
   const handleQuickAdjustSuccess = () => {

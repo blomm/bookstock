@@ -223,7 +223,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 ))}
               </select>
               <p className="mt-2 text-xs text-gray-500">
-                This will update the user's role in both the database and Clerk
+                This will update the user&apos;s role in both the database and Clerk
               </p>
             </div>
 

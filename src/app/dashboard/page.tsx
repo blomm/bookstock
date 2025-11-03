@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth, useUser } from '@clerk/nextjs'
+import Link from 'next/link'
 import { UserMenu } from '@/components/auth/user-menu'
 import { PermissionGuard, AdminOnly } from '@/components/auth/permission-guard'
 import { useRouter } from 'next/navigation'
@@ -215,7 +216,7 @@ export default function DashboardPage() {
                 </PermissionGuard>
 
                 <PermissionGuard requiredPermission="title:read">
-                  <a
+                  <Link
                     href="/titles"
                     className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
@@ -229,11 +230,11 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-gray-900">Manage Titles</p>
                       <p className="text-sm text-gray-500">Add and edit book titles</p>
                     </div>
-                  </a>
+                  </Link>
                 </PermissionGuard>
 
                 <PermissionGuard requiredPermission="warehouse:read">
-                  <a
+                  <Link
                     href="/warehouses"
                     className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
@@ -247,7 +248,7 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-gray-900">Warehouses</p>
                       <p className="text-sm text-gray-500">Manage warehouse locations</p>
                     </div>
-                  </a>
+                  </Link>
                 </PermissionGuard>
 
                 <AdminOnly>

@@ -579,7 +579,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      Are you sure you want to delete "{title.title}"? This action cannot be undone.
+                      Are you sure you want to delete &quot;{title.title}&quot;? This action cannot be undone.
                       {totalInventory > 0 && (
                         <span className="block mt-2 font-medium text-red-600">
                           Warning: This title has {totalInventory} units in inventory and cannot be deleted.

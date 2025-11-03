@@ -1,0 +1,36 @@
+# Test files
+src/test
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Development files
+.env.local
+.env.development
+.env.test
+
+# Documentation
+*.md
+!DEPLOYMENT.md
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Coverage
+coverage
+
+# Playwright
+playwright-report
+test-results
+
+# Agent OS
+.agent-os

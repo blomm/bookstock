@@ -222,7 +222,7 @@ export function QuickStockAdjustmentModal({
                     <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Examples: "Physical count discrepancy", "Damaged items found during inspection", "Returns processing"
+                    Examples: &quot;Physical count discrepancy&quot;, &quot;Damaged items found during inspection&quot;, &quot;Returns processing&quot;
                   </p>
                 </div>
               </div>

@@ -76,7 +76,7 @@ export default function SignUpPage() {
             </li>
             <li className="flex items-start">
               <div className="w-2 h-2 bg-blue-600 rounded-full mr-3 mt-1.5"></div>
-              You'll receive a verification email after signing up
+              You&apos;ll receive a verification email after signing up
             </li>
           </ul>
         </div>
