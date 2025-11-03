@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requirePermission, AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
-import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const AssignRoleSchema = z.object({
@@ -61,12 +61,17 @@ async function assignRoleHandler(
 
     const expiresAt = data.expires_at ? new Date(data.expires_at) : null
 
-    const userRole = await userService.assignRole(
-      id,
-      data.role_id,
-      currentUserId,
-      expiresAt
-    )
+    // Create or update the user role assignment
+    const userRole = await prisma.userRole.create({
+      data: {
+        userId: id,
+        roleId: data.role_id,
+        expiresAt: expiresAt
+      },
+      include: {
+        role: true
+      }
+    })
 
     return NextResponse.json(userRole, { status: 201 })
   } catch (error) {
