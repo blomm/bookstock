@@ -16,7 +16,8 @@ async function getUserHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await userService.getUserWithRoles(params.id)
+    const { id } = await params
+    const user = await userService.getUserWithRoles(id)
 
     if (!user) {
       return NextResponse.json(
@@ -61,6 +62,7 @@ async function updateUserHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await req.json()
     const data = UpdateUserSchema.parse(body)
 
@@ -72,7 +74,7 @@ async function updateUserHandler(
       ...(data.is_active !== undefined && { isActive: data.is_active })
     }
 
-    const user = await userService.updateUser(params.id, updateData)
+    const user = await userService.updateUser(id, updateData)
 
     if (!user) {
       return NextResponse.json(
@@ -111,8 +113,9 @@ async function deleteUserHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Don't actually delete users, just deactivate them
-    const user = await userService.deactivateUser(params.id)
+    const user = await userService.deactivateUser(id)
 
     if (!user) {
       return NextResponse.json(
