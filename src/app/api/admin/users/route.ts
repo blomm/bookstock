@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
 import { z } from 'zod'
@@ -110,12 +110,12 @@ export const GET = requirePermission(
   getUsersHandler
 )
 
-export const POST = withAuditLog(
+export const POST = requirePermission(
   'user:create',
-  'user'
-)(
-  requirePermission(
-    'user:create',
-    createUserHandler
-  )
+  createUserHandler,
+  {
+    enableAuditLog: true,
+    action: 'user:create',
+    resource: 'user'
+  }
 )

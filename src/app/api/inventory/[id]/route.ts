@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { inventoryService } from '@/services/inventoryService'
 import { z } from 'zod'
 
@@ -107,22 +107,22 @@ export const GET = requirePermission(
   getInventoryHandler
 )
 
-export const PUT = withAuditLog(
+export const PUT = requirePermission(
   'inventory:update',
-  'inventory'
-)(
-  requirePermission(
-    'inventory:update',
-    updateInventoryHandler
-  )
+  updateInventoryHandler,
+  {
+    enableAuditLog: true,
+    action: 'inventory:update',
+    resource: 'inventory'
+  }
 )
 
-export const DELETE = withAuditLog(
+export const DELETE = requirePermission(
   'inventory:delete',
-  'inventory'
-)(
-  requirePermission(
-    'inventory:delete',
-    deleteInventoryHandler
-  )
+  deleteInventoryHandler,
+  {
+    enableAuditLog: true,
+    action: 'inventory:delete',
+    resource: 'inventory'
+  }
 )

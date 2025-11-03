@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog, type AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
+import { requirePermission, type AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
 import { stockMovementService } from '@/services/stockMovementService'
 import { CreateStockMovementSchema, GetMovementHistorySchema } from '@/lib/validators/inventory'
 import { z } from 'zod'
@@ -223,12 +223,12 @@ export const GET = requirePermission(
   getStockMovementsHandler
 )
 
-export const POST = withAuditLog(
-  'stock_movement:create',
-  'stock_movement'
-)(
-  requirePermission(
-    'inventory:update',
-    createStockMovementHandler
-  )
+export const POST = requirePermission(
+  'inventory:update',
+  createStockMovementHandler,
+  {
+    enableAuditLog: true,
+    action: 'stock_movement:create',
+    resource: 'stock_movement'
+  }
 )

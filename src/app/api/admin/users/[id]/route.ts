@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
 import { z } from 'zod'
@@ -136,22 +136,22 @@ export const GET = requirePermission(
   getUserHandler
 )
 
-export const PUT = withAuditLog(
+export const PUT = requirePermission(
   'user:update',
-  'user'
-)(
-  requirePermission(
-    'user:update',
-    updateUserHandler
-  )
+  updateUserHandler,
+  {
+    enableAuditLog: true,
+    action: 'user:update',
+    resource: 'user'
+  }
 )
 
-export const DELETE = withAuditLog(
-  'user:deactivate',
-  'user'
-)(
-  requirePermission(
-    'user:delete',
-    deleteUserHandler
-  )
+export const DELETE = requirePermission(
+  'user:delete',
+  deleteUserHandler,
+  {
+    enableAuditLog: true,
+    action: 'user:deactivate',
+    resource: 'user'
+  }
 )

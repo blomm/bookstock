@@ -77,7 +77,13 @@ async function createAdminUser() {
   console.log('\n✅ All permissions:')
   const allPermissions = new Set<string>()
   finalUser?.userRoles.forEach(ur => {
-    ur.role.permissions.forEach((p: string) => allPermissions.add(p))
+    if (ur.role.permissions && Array.isArray(ur.role.permissions)) {
+      ur.role.permissions.forEach((p) => {
+        if (typeof p === 'string') {
+          allPermissions.add(p)
+        }
+      })
+    }
   })
   Array.from(allPermissions).sort().forEach(p => {
     console.log(`  - ${p}`)

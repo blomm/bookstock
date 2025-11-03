@@ -71,23 +71,34 @@ async function main() {
   // Create example series for testing
   console.log('📚 Creating example series...')
 
-  const opinionatedGuides = await prisma.series.upsert({
-    where: { name: 'Opinionated Guides' },
-    update: {},
-    create: {
-      name: 'Opinionated Guides',
-      description: 'Technical guide series covering various programming topics'
-    }
-  })
+  // Use a default organization ID for seeding
+  const defaultOrgId = 'org_default'
 
-  const photoStories = await prisma.series.upsert({
-    where: { name: 'East London Photo Stories' },
-    update: {},
-    create: {
-      name: 'East London Photo Stories',
-      description: 'Photography series documenting East London culture'
-    }
+  let opinionatedGuides = await prisma.series.findFirst({
+    where: { name: 'Opinionated Guides', organizationId: defaultOrgId }
   })
+  if (!opinionatedGuides) {
+    opinionatedGuides = await prisma.series.create({
+      data: {
+        name: 'Opinionated Guides',
+        description: 'Technical guide series covering various programming topics',
+        organizationId: defaultOrgId
+      }
+    })
+  }
+
+  let photoStories = await prisma.series.findFirst({
+    where: { name: 'East London Photo Stories', organizationId: defaultOrgId }
+  })
+  if (!photoStories) {
+    photoStories = await prisma.series.create({
+      data: {
+        name: 'East London Photo Stories',
+        description: 'Photography series documenting East London culture',
+        organizationId: defaultOrgId
+      }
+    })
+  }
 
   console.log('✅ Created series:', {
     opinionated: opinionatedGuides.name,

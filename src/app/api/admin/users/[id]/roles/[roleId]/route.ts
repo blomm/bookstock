@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
 
@@ -51,12 +51,12 @@ async function removeRoleHandler(
   }
 }
 
-export const DELETE = withAuditLog(
-  'role:remove',
-  'user_role'
-)(
-  requirePermission(
-    'user:update',
-    removeRoleHandler
-  )
+export const DELETE = requirePermission(
+  'user:update',
+  removeRoleHandler,
+  {
+    enableAuditLog: true,
+    action: 'role:remove',
+    resource: 'user_role'
+  }
 )

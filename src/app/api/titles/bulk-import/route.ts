@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { titleService } from '@/services/titleService'
 import { BulkImportSchema } from '@/lib/validators/title'
 import { z } from 'zod'
@@ -60,9 +60,12 @@ async function bulkImportHandler(req: NextRequest) {
 }
 
 // Apply middleware: authentication, authorization, and audit logging
-export const POST = withAuditLog(
-  'title:bulk-import',
-  'title'
-)(
-  requirePermission('title:create', bulkImportHandler)
+export const POST = requirePermission(
+  'title:create',
+  bulkImportHandler,
+  {
+    enableAuditLog: true,
+    action: 'title:bulk-import',
+    resource: 'title'
+  }
 )

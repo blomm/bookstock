@@ -26,7 +26,7 @@ async function assignAdminRole() {
     process.exit(1)
   }
 
-  console.log(`✅ Found user: ${user.name || user.email}`)
+  console.log(`✅ Found user: ${user.email}`)
 
   // Find the Admin role
   const adminRole = await prisma.role.findUnique({
@@ -51,7 +51,7 @@ async function assignAdminRole() {
         roleId: adminRole.id
       }
     })
-    console.log(`✅ Assigned Admin role to ${user.name || user.email}`)
+    console.log(`✅ Assigned Admin role to ${user.email}`)
   }
 
   // Show current roles

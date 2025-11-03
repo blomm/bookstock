@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { seriesService } from '@/services/seriesService'
 import { CreateSeriesSchema } from '@/lib/validators/series'
 import { z } from 'zod'
@@ -138,12 +138,12 @@ export const GET = requirePermission(
   getSeriesHandler
 )
 
-export const POST = withAuditLog(
+export const POST = requirePermission(
   'series:create',
-  'series'
-)(
-  requirePermission(
-    'series:create',
-    createSeriesHandler
-  )
+  createSeriesHandler,
+  {
+    enableAuditLog: true,
+    action: 'series:create',
+    resource: 'series'
+  }
 )

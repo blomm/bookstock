@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { roleService } from '@/services/roleService'
+import { authorizationService } from '@/services/authorizationService'
 import { z } from 'zod'
 
 const CreateRoleSchema = z.object({
@@ -21,12 +22,12 @@ async function getRolesHandler(req: NextRequest) {
     const isActive = searchParams.get('isActive')
     const includeSystem = searchParams.get('includeSystem') !== 'false'
 
-    const result = await roleService.list({
+    const result = await roleService.listRoles({
       page,
       limit,
       search,
       isActive: isActive ? isActive === 'true' : undefined,
-      includeSystem
+      isSystem: includeSystem ? undefined : false
     })
 
     return NextResponse.json(result)
@@ -59,7 +60,7 @@ async function createRoleHandler(req: NextRequest) {
       )
     }
 
-    const role = await roleService.create(data)
+    const role = await roleService.createRole(data)
 
     return NextResponse.json(role, { status: 201 })
   } catch (error) {
@@ -83,12 +84,12 @@ export const GET = requirePermission(
   getRolesHandler
 )
 
-export const POST = withAuditLog(
+export const POST = requirePermission(
   'role:create',
-  'role'
-)(
-  requirePermission(
-    'role:create',
-    createRoleHandler
-  )
+  createRoleHandler,
+  {
+    enableAuditLog: true,
+    action: 'role:create',
+    resource: 'role'
+  }
 )

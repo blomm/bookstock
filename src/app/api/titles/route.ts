@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { titleService } from '@/services/titleService'
 import { CreateTitleSchema } from '@/lib/validators/title'
 import { z } from 'zod'
@@ -143,12 +143,12 @@ export const GET = requirePermission(
   getTitlesHandler
 )
 
-export const POST = withAuditLog(
+export const POST = requirePermission(
   'title:create',
-  'title'
-)(
-  requirePermission(
-    'title:create',
-    createTitleHandler
-  )
+  createTitleHandler,
+  {
+    enableAuditLog: true,
+    action: 'title:create',
+    resource: 'title'
+  }
 )

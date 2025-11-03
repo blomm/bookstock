@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { titleService } from '@/services/titleService'
 import { UpdateTitleSchema } from '@/lib/validators/title'
 import { z } from 'zod'
@@ -235,22 +235,22 @@ export const GET = requirePermission(
   getTitleHandler
 )
 
-export const PUT = withAuditLog(
+export const PUT = requirePermission(
   'title:update',
-  'title'
-)(
-  requirePermission(
-    'title:update',
-    updateTitleHandler
-  )
+  updateTitleHandler,
+  {
+    enableAuditLog: true,
+    action: 'title:update',
+    resource: 'title'
+  }
 )
 
-export const DELETE = withAuditLog(
+export const DELETE = requirePermission(
   'title:delete',
-  'title'
-)(
-  requirePermission(
-    'title:delete',
-    deleteTitleHandler
-  )
+  deleteTitleHandler,
+  {
+    enableAuditLog: true,
+    action: 'title:delete',
+    resource: 'title'
+  }
 )

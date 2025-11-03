@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { warehouseService } from '@/services/warehouseService'
 
 async function deactivateWarehouseHandler(
@@ -36,12 +36,12 @@ async function deactivateWarehouseHandler(
   }
 }
 
-export const PATCH = withAuditLog(
+export const PATCH = requirePermission(
   'warehouse:update',
-  'warehouse'
-)(
-  requirePermission(
-    'warehouse:update',
-    deactivateWarehouseHandler
-  )
+  deactivateWarehouseHandler,
+  {
+    enableAuditLog: true,
+    action: 'warehouse:update',
+    resource: 'warehouse'
+  }
 )

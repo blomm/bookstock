@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { inventoryService } from '@/services/inventoryService'
 import { z } from 'zod'
 
@@ -41,12 +41,12 @@ async function adjustInventoryHandler(
   }
 }
 
-export const POST = withAuditLog(
-  'inventory:adjust',
-  'inventory'
-)(
-  requirePermission(
-    'inventory:update',
-    adjustInventoryHandler
-  )
+export const POST = requirePermission(
+  'inventory:update',
+  adjustInventoryHandler,
+  {
+    enableAuditLog: true,
+    action: 'inventory:adjust',
+    resource: 'inventory'
+  }
 )

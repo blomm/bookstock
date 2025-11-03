@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { titleService } from '@/services/titleService'
 import { BulkUpdatePricesSchema } from '@/lib/validators/title'
 import { z } from 'zod'
@@ -67,9 +67,12 @@ async function bulkUpdatePricesHandler(req: NextRequest) {
 }
 
 // Apply middleware: authentication, authorization, and audit logging
-export const PUT = withAuditLog(
-  'title:bulk-update-prices',
-  'title'
-)(
-  requirePermission('title:update', bulkUpdatePricesHandler)
+export const PUT = requirePermission(
+  'title:update',
+  bulkUpdatePricesHandler,
+  {
+    enableAuditLog: true,
+    action: 'title:bulk-update-prices',
+    resource: 'title'
+  }
 )

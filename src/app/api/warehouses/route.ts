@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { warehouseService } from '@/services/warehouseService'
 import { CreateWarehouseSchema, WarehouseTypeSchema, WarehouseStatusSchema } from '@/lib/validators/warehouse'
 import { z } from 'zod'
@@ -126,12 +126,12 @@ export const GET = requirePermission(
   getWarehousesHandler
 )
 
-export const POST = withAuditLog(
+export const POST = requirePermission(
   'warehouse:create',
-  'warehouse'
-)(
-  requirePermission(
-    'warehouse:create',
-    createWarehouseHandler
-  )
+  createWarehouseHandler,
+  {
+    enableAuditLog: true,
+    action: 'warehouse:create',
+    resource: 'warehouse'
+  }
 )

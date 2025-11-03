@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { seriesService } from '@/services/seriesService'
 import { UpdateSeriesSchema } from '@/lib/validators/series'
 import { z } from 'zod'
@@ -236,22 +236,22 @@ export const GET = requirePermission(
   getSeriesHandler
 )
 
-export const PUT = withAuditLog(
+export const PUT = requirePermission(
   'series:update',
-  'series'
-)(
-  requirePermission(
-    'series:update',
-    updateSeriesHandler
-  )
+  updateSeriesHandler,
+  {
+    enableAuditLog: true,
+    action: 'series:update',
+    resource: 'series'
+  }
 )
 
-export const DELETE = withAuditLog(
+export const DELETE = requirePermission(
   'series:delete',
-  'series'
-)(
-  requirePermission(
-    'series:delete',
-    deleteSeriesHandler
-  )
+  deleteSeriesHandler,
+  {
+    enableAuditLog: true,
+    action: 'series:delete',
+    resource: 'series'
+  }
 )

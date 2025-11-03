@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { inventoryService } from '@/services/inventoryService'
 import { UpdateLowStockThresholdSchema } from '@/lib/validators/inventory'
 import { z } from 'zod'
@@ -87,12 +87,12 @@ async function updateStockThresholdHandler(
   }
 }
 
-export const PATCH = withAuditLog(
-  'title:update_threshold',
-  'title'
-)(
-  requirePermission(
-    'title:update',
-    updateStockThresholdHandler
-  )
+export const PATCH = requirePermission(
+  'title:update',
+  updateStockThresholdHandler,
+  {
+    enableAuditLog: true,
+    action: 'title:update_threshold',
+    resource: 'title'
+  }
 )

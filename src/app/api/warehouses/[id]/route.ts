@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission, withAuditLog } from '@/middleware/apiAuthMiddleware'
+import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { warehouseService } from '@/services/warehouseService'
 import { UpdateWarehouseSchema } from '@/lib/validators/warehouse'
 import { z } from 'zod'
@@ -136,22 +136,22 @@ export const GET = requirePermission(
   getWarehouseHandler
 )
 
-export const PUT = withAuditLog(
+export const PUT = requirePermission(
   'warehouse:update',
-  'warehouse'
-)(
-  requirePermission(
-    'warehouse:update',
-    updateWarehouseHandler
-  )
+  updateWarehouseHandler,
+  {
+    enableAuditLog: true,
+    action: 'warehouse:update',
+    resource: 'warehouse'
+  }
 )
 
-export const DELETE = withAuditLog(
+export const DELETE = requirePermission(
   'warehouse:delete',
-  'warehouse'
-)(
-  requirePermission(
-    'warehouse:delete',
-    deleteWarehouseHandler
-  )
+  deleteWarehouseHandler,
+  {
+    enableAuditLog: true,
+    action: 'warehouse:delete',
+    resource: 'warehouse'
+  }
 )
