@@ -86,7 +86,16 @@ async function createUserHandler(req: NextRequest) {
     const body = await req.json()
     const data = CreateUserSchema.parse(body)
 
-    const user = await userService.createUser(data)
+    // Map snake_case to camelCase for service
+    const createData = {
+      clerkId: data.clerk_id,
+      email: data.email,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      isActive: data.is_active ?? true
+    }
+
+    const user = await userService.createUser(createData)
 
     return NextResponse.json(user, { status: 201 })
   } catch (error) {
