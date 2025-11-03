@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission } from '@/middleware/apiAuthMiddleware'
+import { NextResponse } from 'next/server'
+import { requirePermission, AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
 import { z } from 'zod'
@@ -10,11 +10,12 @@ const AssignRoleSchema = z.object({
 })
 
 async function getUserRolesHandler(
-  req: NextRequest,
+  req: AuthenticatedRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const roles = await authorizationService.getUserRoles(params.id)
+    const { id } = await params
+    const roles = await authorizationService.getUserRoles(id)
 
     return NextResponse.json(roles)
   } catch (error) {
@@ -27,10 +28,11 @@ async function getUserRolesHandler(
 }
 
 async function assignRoleHandler(
-  req: NextRequest,
+  req: AuthenticatedRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await req.json()
     const data = AssignRoleSchema.parse(body)
 
@@ -60,7 +62,7 @@ async function assignRoleHandler(
     const expiresAt = data.expires_at ? new Date(data.expires_at) : null
 
     const userRole = await userService.assignRole(
-      params.id,
+      id,
       data.role_id,
       currentUserId,
       expiresAt

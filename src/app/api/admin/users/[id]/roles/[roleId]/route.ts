@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requirePermission, AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
 import { authorizationService } from '@/services/authorizationService'
+import { prisma } from '@/lib/db'
 
 async function removeRoleHandler(
   req: AuthenticatedRequest,
@@ -32,9 +33,15 @@ async function removeRoleHandler(
       )
     }
 
-    const removed = await userService.removeRole(id, roleId)
+    // Remove the user role assignment
+    const removed = await prisma.userRole.deleteMany({
+      where: {
+        userId: id,
+        roleId: roleId
+      }
+    })
 
-    if (!removed) {
+    if (removed.count === 0) {
       return NextResponse.json(
         { error: 'Role assignment not found' },
         { status: 404 }

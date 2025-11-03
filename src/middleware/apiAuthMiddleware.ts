@@ -162,7 +162,7 @@ export function requirePermission<T = any>(
   permission: string,
   handler: (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse>,
   options?: AuthMiddlewareOptions
-) {
+): (req: AuthenticatedRequest, context: RouteContext<T>) => Promise<NextResponse> {
   return apiAuthMiddleware(handler, [permission], options)
 }
 
