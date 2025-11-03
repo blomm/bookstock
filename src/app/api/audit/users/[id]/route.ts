@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/middleware/apiAuthMiddleware'
-import { auditLogger } from '@/middleware/auditMiddleware'
+import { auditLogService } from '@/services/auditLogService'
 import { z } from 'zod'
 
 const UserAuditQuerySchema = z.object({
@@ -16,14 +16,15 @@ async function getUserAuditLogsHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(req.url)
     const queryParams = Object.fromEntries(searchParams.entries())
 
     const filters = UserAuditQuerySchema.parse(queryParams)
 
-    const result = await auditLogger.getAuditLogs({
+    const result = await auditLogService.getAuditLogs({
       ...filters,
-      userId: parseInt(params.id)
+      userId: parseInt(id)
     })
 
     return NextResponse.json(result)
