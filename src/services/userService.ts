@@ -319,16 +319,16 @@ export class UserService {
     if (existingUser) {
       return await this.updateUser(existingUser.id, {
         email: primaryEmail,
-        firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName,
+        firstName: clerkUser.firstName || undefined,
+        lastName: clerkUser.lastName || undefined,
         lastLoginAt: new Date()
       })
     } else {
       return await this.createUser({
         clerkId: clerkUser.id,
         email: primaryEmail,
-        firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName
+        firstName: clerkUser.firstName || undefined,
+        lastName: clerkUser.lastName || undefined
       })
     }
   }
@@ -360,7 +360,18 @@ export class UserService {
       orderBy: { assignedAt: 'desc' }
     })
 
-    return userRoles
+    return userRoles.map(ur => ({
+      id: ur.id,
+      role: {
+        id: ur.role.id,
+        name: ur.role.name,
+        description: ur.role.description,
+        permissions: ur.role.permissions as string[]
+      },
+      assignedAt: ur.assignedAt,
+      expiresAt: ur.expiresAt,
+      isActive: ur.isActive
+    }))
   }
 
   async getActiveUsers(): Promise<User[]> {

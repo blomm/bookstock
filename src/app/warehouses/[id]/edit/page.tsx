@@ -84,7 +84,7 @@ export default function EditWarehousePage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <PermissionGuard permission="warehouse:update">
+    <PermissionGuard requiredPermission="warehouse:update">
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

@@ -37,34 +37,42 @@ export function TitleForm({
   const [apiError, setApiError] = useState<string | null>(null)
   const [showPriceChangeReason, setShowPriceChangeReason] = useState(false)
 
-  // Determine which schema to use
-  const schema = mode === 'create' ? CreateTitleSchema : UpdateTitleSchema
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-    setValue,
-  } = useForm<CreateTitleInput | UpdateTitleInput>({
-    resolver: zodResolver(schema),
-    defaultValues: defaultValues || {
+  // Create separate forms for create and edit modes
+  const createForm = useForm<CreateTitleInput>({
+    resolver: zodResolver(CreateTitleSchema),
+    defaultValues: {
       format: 'PAPERBACK' as Format,
       language: 'en',
     },
   })
 
+  const editForm = useForm<UpdateTitleInput>({
+    resolver: zodResolver(UpdateTitleSchema),
+    defaultValues: defaultValues || {},
+  })
+
+  const form = mode === 'create' ? createForm : editForm
+  const {
+    register: _register,
+    handleSubmit,
+    formState: { errors: _errors },
+    watch,
+    setValue,
+  } = form
+  const register = _register as any
+  const errors = _errors as any
+
   // Watch price fields to show price change reason in edit mode
-  const watchRrp = watch('rrp')
-  const watchUnitCost = watch('unitCost')
-  const watchTradeDiscount = watch('tradeDiscount')
+  const watchRrp = watch('rrp' as any)
+  const watchUnitCost = watch('unitCost' as any)
+  const watchTradeDiscount = watch('tradeDiscount' as any)
 
   // Check if prices changed in edit mode
   if (mode === 'edit' && defaultValues) {
     const pricesChanged =
-      (watchRrp && watchRrp !== defaultValues.rrp) ||
-      (watchUnitCost && watchUnitCost !== defaultValues.unitCost) ||
-      (watchTradeDiscount && watchTradeDiscount !== defaultValues.tradeDiscount)
+      (watchRrp && (watchRrp as unknown as number) !== defaultValues.rrp) ||
+      (watchUnitCost && (watchUnitCost as unknown as number) !== defaultValues.unitCost) ||
+      (watchTradeDiscount && (watchTradeDiscount as unknown as number) !== defaultValues.tradeDiscount)
 
     if (pricesChanged && !showPriceChangeReason) {
       setShowPriceChangeReason(true)
@@ -73,7 +81,7 @@ export function TitleForm({
     }
   }
 
-  const onSubmit = async (data: CreateTitleInput | UpdateTitleInput) => {
+  const onSubmit = async (data: any) => {
     setIsSubmitting(true)
     setApiError(null)
 

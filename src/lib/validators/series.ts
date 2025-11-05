@@ -97,7 +97,15 @@ export const SeriesListFiltersSchema = z.object({
     .int('Limit must be a whole number')
     .positive('Limit must be positive')
     .max(100, 'Limit cannot exceed 100')
-    .default(20)
+    .default(20),
+
+  sortBy: z.enum(['name', 'createdAt'])
+    .optional()
+    .default('name'),
+
+  sortOrder: z.enum(['asc', 'desc'])
+    .optional()
+    .default('asc')
 })
 
 /**

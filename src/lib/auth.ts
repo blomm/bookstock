@@ -17,9 +17,15 @@ import { get_user_role, has_permission, type UserRole } from '@/lib/clerk'
  */
 export async function get_current_user() {
   try {
-    const { userId, user } = await auth()
+    const { userId } = await auth()
 
-    if (!userId || !user) {
+    if (!userId) {
+      return null
+    }
+
+    const user = await currentUser()
+
+    if (!user) {
       return null
     }
 
@@ -256,24 +262,24 @@ export async function validate_api_permission(request: NextRequest, permission: 
 
 /**
  * Create audit log entry
- * @param user_id Database user ID
+ * @param user_id User ID (Clerk ID)
  * @param action Action performed
  * @param details Additional details
  * @param request Optional request object for IP/user agent
  */
 export async function create_audit_log(
-  user_id: number,
+  user_id: string,
   action: string,
   details: any,
   request?: NextRequest
 ) {
   await prisma.auditLog.create({
     data: {
-      user_id,
+      userId: user_id,
       action,
       details,
-      ip_address: request ? get_client_ip(request) : null,
-      user_agent: request?.headers.get('user-agent') || null,
+      ipAddress: request ? get_client_ip(request) : null,
+      userAgent: request?.headers.get('user-agent') || null,
       timestamp: new Date(),
     },
   })

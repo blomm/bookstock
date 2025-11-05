@@ -110,7 +110,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
               <p className="mt-1 text-sm text-gray-500">Code: {warehouse.code}</p>
             </div>
             <div className="flex items-center gap-4">
-              <PermissionGuard permission="warehouse:update">
+              <PermissionGuard requiredPermission="warehouse:update">
                 <div className="flex gap-2">
                   {warehouse.status !== 'ACTIVE' && (
                     <button

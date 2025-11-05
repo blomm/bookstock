@@ -200,7 +200,14 @@ export class SeriesService {
       throw new Error('Series not found')
     }
 
-    return series as SeriesWithTitles
+    // Convert Decimal to number for rrp
+    return {
+      ...series,
+      titles: series.titles.map(title => ({
+        ...title,
+        rrp: title.rrp.toNumber()
+      }))
+    } as SeriesWithTitles
   }
 
   /**
@@ -337,19 +344,26 @@ export class SeriesService {
     const totalAvailableStock = totalCurrentStock - totalReservedStock
 
     // Count low stock titles
-    const lowStockTitles = await prisma.title.count({
+    // Note: This is a simplified count - proper comparison would need to be done in application code
+    const titlesWithInventory = await prisma.title.findMany({
       where: {
         seriesId,
-        lowStockThreshold: { not: null },
+        lowStockThreshold: { not: null }
+      },
+      select: {
+        id: true,
+        lowStockThreshold: true,
         inventory: {
-          some: {
-            currentStock: {
-              lt: prisma.title.fields.lowStockThreshold
-            }
+          select: {
+            currentStock: true
           }
         }
       }
     })
+
+    const lowStockTitles = titlesWithInventory.filter(title =>
+      title.inventory.some(inv => inv.currentStock < (title.lowStockThreshold || 0))
+    ).length
 
     return {
       seriesId,

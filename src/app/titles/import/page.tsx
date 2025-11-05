@@ -306,7 +306,7 @@ export default function BulkImportPage() {
   }
 
   return (
-    <PermissionGuard permission="title:create">
+    <PermissionGuard requiredPermission="title:create">
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <header className="bg-white border-b border-gray-200">

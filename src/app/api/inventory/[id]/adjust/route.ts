@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/middleware/apiAuthMiddleware'
-import { inventoryService } from '@/services/inventoryService'
+import { stockMovementService } from '@/services/stockMovementService'
 import { z } from 'zod'
 
 const AdjustmentSchema = z.object({
-  adjustment_type: z.enum(['stock_in', 'stock_out', 'adjustment', 'transfer']),
+  titleId: z.number().int(),
+  warehouseId: z.number().int(),
   quantity: z.number().int(),
-  reason: z.string().min(1),
-  reference: z.string().optional(),
-  notes: z.string().optional()
+  notes: z.string().min(10)
 })
 
 async function adjustInventoryHandler(
-  req: NextRequest,
+  req: NextRequest & { user?: { id: string } },
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json()
     const data = AdjustmentSchema.parse(body)
 
-    const result = await inventoryService.adjustStock(params.id, {
-      ...data,
-      adjusted_by: req.user?.id || 'system'
+    const result = await stockMovementService.recordMovement({
+      titleId: data.titleId,
+      warehouseId: data.warehouseId,
+      movementType: 'STOCK_ADJUSTMENT',
+      quantity: data.quantity,
+      notes: data.notes,
+      createdBy: req.user?.id || 'system'
     })
 
     return NextResponse.json(result)

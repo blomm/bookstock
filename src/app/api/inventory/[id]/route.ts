@@ -4,20 +4,9 @@ import { inventoryService } from '@/services/inventoryService'
 import { z } from 'zod'
 
 const UpdateInventorySchema = z.object({
-  quantity_on_hand: z.number().int().min(0).optional(),
-  quantity_available: z.number().int().min(0).optional(),
-  quantity_reserved: z.number().int().min(0).optional(),
-  reorder_point: z.number().int().min(0).optional(),
-  max_stock_level: z.number().int().min(0).optional(),
-  location: z.string().optional()
-})
-
-const AdjustmentSchema = z.object({
-  adjustment_type: z.enum(['stock_in', 'stock_out', 'adjustment', 'transfer']),
-  quantity: z.number().int(),
-  reason: z.string().min(1),
-  reference: z.string().optional(),
-  notes: z.string().optional()
+  currentStock: z.number().int().min(0).optional(),
+  reservedStock: z.number().int().min(0).optional(),
+  lastStockCheck: z.date().optional()
 })
 
 async function getInventoryHandler(
@@ -25,7 +14,17 @@ async function getInventoryHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const inventory = await inventoryService.findById(params.id)
+    const resolvedParams = await params
+    const id = parseInt(resolvedParams.id, 10)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'Invalid inventory ID' },
+        { status: 400 }
+      )
+    }
+
+    const inventory = await inventoryService.findById(id)
 
     if (!inventory) {
       return NextResponse.json(
@@ -49,10 +48,20 @@ async function updateInventoryHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
+    const id = parseInt(resolvedParams.id, 10)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'Invalid inventory ID' },
+        { status: 400 }
+      )
+    }
+
     const body = await req.json()
     const data = UpdateInventorySchema.parse(body)
 
-    const inventory = await inventoryService.update(params.id, data)
+    const inventory = await inventoryService.update(id, data)
 
     if (!inventory) {
       return NextResponse.json(
@@ -83,7 +92,17 @@ async function deleteInventoryHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const deleted = await inventoryService.delete(params.id)
+    const resolvedParams = await params
+    const id = parseInt(resolvedParams.id, 10)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'Invalid inventory ID' },
+        { status: 400 }
+      )
+    }
+
+    const deleted = await inventoryService.delete(id)
 
     if (!deleted) {
       return NextResponse.json(

@@ -70,7 +70,7 @@ export function apiAuthMiddleware<T = any>(
           if (!hasAnyPermission) {
             if (options.enableAuditLog) {
               await createAuditLogSafely(
-                parseInt(dbUser.id),
+                authInfo.userId,
                 'authorization:denied',
                 {
                   required_permissions: requiredPermissions,
@@ -95,7 +95,7 @@ export function apiAuthMiddleware<T = any>(
       // Create audit log if enabled
       if (options.enableAuditLog && options.action) {
         await createAuditLogSafely(
-          parseInt(dbUser.id),
+          authInfo.userId,
           options.action,
           {
             resource: options.resource,
@@ -139,7 +139,7 @@ export function apiAuthMiddleware<T = any>(
 }
 
 async function createAuditLogSafely(
-  userId: number,
+  userId: string,
   action: string,
   details: any,
   request?: NextRequest

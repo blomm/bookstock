@@ -156,7 +156,7 @@ export default function WarehousesPage() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
             <div className="flex items-center gap-4">
-              <PermissionGuard permission="warehouse:create">
+              <PermissionGuard requiredPermission="warehouse:create">
                 <button
                   onClick={() => router.push('/warehouses/new')}
                   className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
@@ -301,7 +301,7 @@ export default function WarehousesPage() {
                       >
                         View
                       </button>
-                      <PermissionGuard permission="warehouse:update">
+                      <PermissionGuard requiredPermission="warehouse:update">
                         <button
                           onClick={() => router.push(`/warehouses/${warehouse.id}/edit`)}
                           className="text-indigo-600 hover:text-indigo-900"

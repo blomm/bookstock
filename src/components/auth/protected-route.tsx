@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@clerk/nextjs'
+import { useAuth, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { has_permission, type UserRole } from '@/lib/clerk'
@@ -26,7 +26,8 @@ export function ProtectedRoute({
   required_permission,
   fallback = <div>Loading...</div>
 }: ProtectedRouteProps) {
-  const { isSignedIn, isLoaded, user } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
 
   useEffect(() => {
@@ -122,7 +123,7 @@ export function withAuth<P extends object>(
  * Hook for checking permissions in components
  */
 export function usePermissions() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const user_role = user?.publicMetadata?.role as UserRole
 
   return {

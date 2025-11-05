@@ -4,17 +4,11 @@ import { inventoryService } from '@/services/inventoryService'
 import { z } from 'zod'
 
 const CreateInventorySchema = z.object({
-  title_id: z.string(),
-  warehouse_id: z.string(),
-  quantity_on_hand: z.number().int().min(0),
-  quantity_available: z.number().int().min(0),
-  quantity_reserved: z.number().int().min(0).optional(),
-  reorder_point: z.number().int().min(0).optional(),
-  max_stock_level: z.number().int().min(0).optional(),
-  location: z.string().optional()
+  titleId: z.number().int(),
+  warehouseId: z.number().int(),
+  currentStock: z.number().int().min(0).optional(),
+  reservedStock: z.number().int().min(0).optional()
 })
-
-const UpdateInventorySchema = CreateInventorySchema.partial()
 
 async function getInventoryHandler(req: NextRequest) {
   try {

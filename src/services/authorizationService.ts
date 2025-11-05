@@ -38,16 +38,14 @@ export class AuthorizationService {
         include: {
           userRoles: {
             where: {
-              is_active: true,
+              isActive: true,
               OR: [
-                { expires_at: null },
-                { expires_at: { gt: new Date() } }
+                { expiresAt: null },
+                { expiresAt: { gt: new Date() } }
               ]
             },
             include: {
-              role: {
-                where: { is_active: true }
-              }
+              role: true
             }
           }
         }
@@ -180,16 +178,14 @@ export class AuthorizationService {
         include: {
           userRoles: {
             where: {
-              is_active: true,
+              isActive: true,
               OR: [
-                { expires_at: null },
-                { expires_at: { gt: new Date() } }
+                { expiresAt: null },
+                { expiresAt: { gt: new Date() } }
               ]
             },
             include: {
-              role: {
-                where: { is_active: true }
-              }
+              role: true
             }
           }
         }
@@ -205,9 +201,9 @@ export class AuthorizationService {
           role: userRole.role,
           userRole: {
             id: userRole.id,
-            assigned_at: userRole.assigned_at,
-            assigned_by: userRole.assigned_by,
-            expires_at: userRole.expires_at
+            assigned_at: userRole.assignedAt,
+            assigned_by: userRole.assignedBy,
+            expiresAt: userRole.expiresAt
           }
         }))
     } catch (error) {
@@ -306,7 +302,7 @@ export class AuthorizationService {
       description: string
       assigned_at: Date
       assigned_by: string | null
-      expires_at: Date | null
+      expiresAt: Date | null
     }>
   }> {
     try {
@@ -316,9 +312,9 @@ export class AuthorizationService {
       const roles = userRoles.map(({ role, userRole }) => ({
         name: role.name,
         description: role.description || '',
-        assigned_at: userRole.assigned_at,
-        assigned_by: userRole.assigned_by,
-        expires_at: userRole.expires_at
+        assigned_at: userRole.assignedAt,
+        assigned_by: userRole.assignedBy,
+        expiresAt: userRole.expiresAt
       }))
 
       return {
