@@ -63,9 +63,9 @@ export async function POST(req: NextRequest) {
 
     // Create the invitation
     // Build absolute redirect URL for invitations
+    // Always use NEXT_PUBLIC_APP_URL in production for consistent URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-                    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
-                    'http://localhost:3000'
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const redirectPath = process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL || '/dashboard'
     const redirectUrl = redirectPath.startsWith('http') ? redirectPath : `${baseUrl}${redirectPath}`
 
