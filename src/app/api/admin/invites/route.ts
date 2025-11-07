@@ -62,6 +62,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Create the invitation
+    // Build absolute redirect URL for invitations
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
+                    'http://localhost:3000'
+    const redirectPath = process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL || '/dashboard'
+    const redirectUrl = redirectPath.startsWith('http') ? redirectPath : `${baseUrl}${redirectPath}`
+
     const invitation = await clerkClient.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: {
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
         invited_by: userId,
         invited_at: new Date().toISOString()
       },
-      redirectUrl: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL || '/dashboard'
+      redirectUrl
     })
 
     return NextResponse.json({
