@@ -12,7 +12,8 @@ export interface AuthMiddlewareOptions {
 
 type AuthenticatedRequest = NextRequest & {
   user?: {
-    id: string
+    id: string // Database user ID
+    clerkId: string // Clerk user ID
     email: string
     role: string
     clerk_user: any
@@ -42,9 +43,10 @@ export function apiAuthMiddleware<T = any>(
       // Sync user to database if not exists
       const dbUser = await sync_user_to_database(authInfo.user)
 
-      // Add user context to request
+      // Add user context to request with both database and Clerk IDs
       req.user = {
-        id: authInfo.userId,
+        id: dbUser.id, // Database user ID
+        clerkId: authInfo.userId, // Clerk user ID
         email: authInfo.email || '',
         role: authInfo.role,
         clerk_user: authInfo.user
@@ -70,7 +72,7 @@ export function apiAuthMiddleware<T = any>(
           if (!hasAnyPermission) {
             if (options.enableAuditLog) {
               await createAuditLogSafely(
-                authInfo.userId,
+                dbUser.id, // Use database user ID, not Clerk ID
                 'authorization:denied',
                 {
                   required_permissions: requiredPermissions,
@@ -95,7 +97,7 @@ export function apiAuthMiddleware<T = any>(
       // Create audit log if enabled
       if (options.enableAuditLog && options.action) {
         await createAuditLogSafely(
-          authInfo.userId,
+          dbUser.id, // Use database user ID, not Clerk ID
           options.action,
           {
             resource: options.resource,

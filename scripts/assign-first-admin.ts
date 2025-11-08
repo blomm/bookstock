@@ -1,34 +1,21 @@
 import { PrismaClient } from '@prisma/client'
+import { createClerkClient } from '@clerk/backend'
 
 const prisma = new PrismaClient()
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
 
+/**
+ * Assign Admin Role to First User
+ *
+ * This script assigns the Admin role to the first user in Clerk publicMetadata.
+ * Roles are now managed in Clerk, not in the database.
+ *
+ * Usage:
+ *   ADMIN_EMAIL=user@example.com npm run db:assign-admin  # Assign to specific email
+ *   npm run db:assign-admin                                # Assign to first user
+ */
 async function main() {
-  console.log('🔧 Assigning admin role to first user...')
-
-  // Get or create admin role
-  let adminRole = await prisma.role.findUnique({
-    where: { name: 'Admin' }
-  })
-
-  if (!adminRole) {
-    console.log('Creating Admin role...')
-    adminRole = await prisma.role.create({
-      data: {
-        name: 'Admin',
-        description: 'Full system access for system administrators',
-        permissions: [
-          'user:*',
-          'role:*',
-          'title:*',
-          'inventory:*',
-          'warehouse:*',
-          'settings:*',
-          'audit:read'
-        ],
-        isSystem: true
-      }
-    })
-  }
+  console.log('🔧 Assigning Admin role to first user in Clerk...\n')
 
   // Get the first user (or specified by email)
   const email = process.env.ADMIN_EMAIL
@@ -36,16 +23,14 @@ async function main() {
 
   if (email) {
     user = await prisma.user.findUnique({
-      where: { email },
-      include: { userRoles: true }
+      where: { email }
     })
     if (!user) {
-      console.log(`❌ User with email ${email} not found`)
+      console.log(`❌ User with email ${email} not found in database`)
       return
     }
   } else {
     user = await prisma.user.findFirst({
-      include: { userRoles: true },
       orderBy: { createdAt: 'asc' }
     })
     if (!user) {
@@ -54,28 +39,28 @@ async function main() {
     }
   }
 
-  // Check if user already has admin role
-  const hasAdminRole = user.userRoles.some(ur => ur.roleId === adminRole.id)
+  // Get Clerk user to check current role
+  const clerkUser = await clerkClient.users.getUser(user.clerkId)
+  const currentRole = clerkUser.publicMetadata?.role
 
-  if (hasAdminRole) {
-    console.log(`✅ User ${user.email} already has Admin role`)
+  if (currentRole === 'admin') {
+    console.log(`✅ User ${user.email} already has admin role`)
     return
   }
 
-  // Assign admin role
-  await prisma.userRole.create({
-    data: {
-      userId: user.id,
-      roleId: adminRole.id,
-      assignedBy: 'system',
-      assignedAt: new Date(),
-      isActive: true
+  // Assign admin role in Clerk (lowercase to match ROLE_PERMISSIONS)
+  await clerkClient.users.updateUser(user.clerkId, {
+    publicMetadata: {
+      ...clerkUser.publicMetadata,
+      role: 'admin'
     }
   })
 
-  console.log(`✅ Successfully assigned Admin role to ${user.email}`)
+  console.log(`✅ Successfully assigned admin role to ${user.email}`)
   console.log(`   User ID: ${user.id}`)
   console.log(`   Clerk ID: ${user.clerkId}`)
+  console.log(`   Previous role: ${currentRole || 'none'}`)
+  console.log(`   New role: admin`)
 }
 
 main()

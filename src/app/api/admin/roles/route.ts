@@ -1,36 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/middleware/apiAuthMiddleware'
-import { roleService } from '@/services/roleService'
-import { authorizationService } from '@/services/authorizationService'
-import { z } from 'zod'
+import { clerkAuthService } from '@/services/clerkAuthService'
 
-const CreateRoleSchema = z.object({
-  name: z.string().min(1).max(50),
-  description: z.string().optional(),
-  permissions: z.array(z.string()),
-  is_system: z.boolean().optional()
-})
-
-const UpdateRoleSchema = CreateRoleSchema.partial()
+/**
+ * Roles API - Now using Clerk-based roles
+ *
+ * Roles are defined in code (/lib/clerk.ts) and stored in Clerk publicMetadata.
+ * This endpoint returns the available roles from code definitions.
+ */
 
 async function getRolesHandler(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const search = searchParams.get('search') || undefined
-    const isActive = searchParams.get('isActive')
-    const includeSystem = searchParams.get('includeSystem') !== 'false'
+    // Get roles from code definitions
+    const roles = clerkAuthService.getAvailableRoles()
 
-    const result = await roleService.listRoles({
-      page,
-      limit,
-      search,
-      isActive: isActive ? isActive === 'true' : undefined,
-      isSystem: includeSystem ? undefined : false
+    // Format to match expected API structure
+    const formattedRoles = roles.map(role => ({
+      id: role.name, // Use role name as ID since we don't have DB IDs
+      name: role.name,
+      description: getRoleDescription(role.name),
+      permissions: role.permissions,
+      isSystem: true, // All code-defined roles are system roles
+      isActive: true,
+    }))
+
+    return NextResponse.json({
+      data: formattedRoles, // Frontend expects 'data' field
+      roles: formattedRoles, // Keep for backward compatibility
+      total: formattedRoles.length,
+      page: 1,
+      limit: formattedRoles.length,
+      totalPages: 1
     })
-
-    return NextResponse.json(result)
   } catch (error) {
     console.error('Error fetching roles:', error)
     return NextResponse.json(
@@ -40,43 +41,17 @@ async function getRolesHandler(req: NextRequest) {
   }
 }
 
-async function createRoleHandler(req: NextRequest) {
-  try {
-    const body = await req.json()
-    const data = CreateRoleSchema.parse(body)
-
-    // Validate that all permissions are valid
-    const invalidPermissions = data.permissions.filter(permission => {
-      return !authorizationService.validatePermissionString(permission)
-    })
-
-    if (invalidPermissions.length > 0) {
-      return NextResponse.json(
-        {
-          error: 'Invalid permissions',
-          invalidPermissions
-        },
-        { status: 400 }
-      )
-    }
-
-    const role = await roleService.createRole(data)
-
-    return NextResponse.json(role, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error creating role:', error)
-    return NextResponse.json(
-      { error: 'Failed to create role' },
-      { status: 500 }
-    )
+/**
+ * Get human-readable description for a role
+ */
+function getRoleDescription(roleName: string): string {
+  const descriptions: Record<string, string> = {
+    'admin': 'Full system access for system administrators',
+    'operations_manager': 'Operational access for managing inventory and orders',
+    'inventory_manager': 'Access to inventory management and stock operations',
+    'read_only_user': 'View-only access for stakeholders and junior team members'
   }
+  return descriptions[roleName] || 'No description available'
 }
 
 export const GET = requirePermission(
@@ -84,12 +59,5 @@ export const GET = requirePermission(
   getRolesHandler
 )
 
-export const POST = requirePermission(
-  'role:create',
-  createRoleHandler,
-  {
-    enableAuditLog: true,
-    action: 'role:create',
-    resource: 'role'
-  }
-)
+// POST is no longer supported - roles are defined in code
+// Use /api/admin/users/[id]/roles to assign roles to users

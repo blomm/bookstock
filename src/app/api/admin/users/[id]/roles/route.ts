@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server'
 import { requirePermission, AuthenticatedRequest } from '@/middleware/apiAuthMiddleware'
-import { authorizationService } from '@/services/authorizationService'
-import { prisma } from '@/lib/db'
+import { clerkAuthService } from '@/services/clerkAuthService'
+import { prisma } from '@/lib/database'
+import { type UserRole } from '@/lib/clerk'
 import { z } from 'zod'
 
+/**
+ * User Roles API - Now using Clerk-based roles
+ *
+ * Roles are stored in Clerk publicMetadata and defined in code.
+ * This endpoint manages role assignment via Clerk's API.
+ */
+
 const AssignRoleSchema = z.object({
-  role_id: z.string(),
-  expires_at: z.string().optional()
+  role_name: z.enum(['admin', 'operations_manager', 'inventory_manager', 'read_only_user']).optional(),
+  role_id: z.enum(['admin', 'operations_manager', 'inventory_manager', 'read_only_user']).optional()
+}).refine(data => data.role_name || data.role_id, {
+  message: 'Either role_name or role_id must be provided'
 })
 
 async function getUserRolesHandler(
@@ -15,9 +25,32 @@ async function getUserRolesHandler(
 ) {
   try {
     const { id } = await params
-    const roles = await authorizationService.getUserRoles(id)
 
-    return NextResponse.json(roles)
+    // Get user from database to find their clerkId
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { clerkId: true, email: true }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get role and permissions from Clerk
+    const { role, permissions } = await clerkAuthService.getEffectivePermissions(user.clerkId)
+
+    return NextResponse.json({
+      role,
+      permissions,
+      user: {
+        id,
+        clerkId: user.clerkId,
+        email: user.email
+      }
+    })
   } catch (error) {
     console.error('Error fetching user roles:', error)
     return NextResponse.json(
@@ -36,44 +69,65 @@ async function assignRoleHandler(
     const body = await req.json()
     const data = AssignRoleSchema.parse(body)
 
-    // Check if the current user can assign this role
-    const currentUserId = req.user?.id
-    if (!currentUserId) {
+    // Get user from database to find their clerkId
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { clerkId: true, email: true }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if current user has permission to assign roles
+    if (!req.user?.id) {
       return NextResponse.json(
         { error: 'User context not found' },
         { status: 400 }
       )
     }
 
-    // For now, we'll get the role name from the role service
-    // In a real implementation, you'd want to validate the role exists
-    const canAssign = await authorizationService.canUserAssignRole(
-      currentUserId,
-      'admin' // This would be dynamically determined from the role_id
-    )
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { clerkId: true }
+    })
 
-    if (!canAssign) {
+    if (!currentUser) {
       return NextResponse.json(
-        { error: 'Insufficient permissions to assign this role' },
+        { error: 'Current user not found' },
+        { status: 400 }
+      )
+    }
+
+    // Check if current user has permission
+    const hasPermission = await clerkAuthService.hasPermission(currentUser.clerkId, 'user:update')
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to assign roles' },
         { status: 403 }
       )
     }
 
-    const expiresAt = data.expires_at ? new Date(data.expires_at) : null
+    // Update role in Clerk - accept either role_name or role_id
+    const roleName = (data.role_name || data.role_id) as UserRole
+    await clerkAuthService.updateUserRole(user.clerkId, roleName)
 
-    // Create or update the user role assignment
-    const userRole = await prisma.userRole.create({
-      data: {
-        userId: id,
-        roleId: data.role_id,
-        expiresAt: expiresAt
-      },
-      include: {
-        role: true
+    // Get updated role info
+    const { role, permissions } = await clerkAuthService.getEffectivePermissions(user.clerkId)
+
+    return NextResponse.json({
+      message: 'Role assigned successfully',
+      role,
+      permissions,
+      user: {
+        id,
+        clerkId: user.clerkId,
+        email: user.email
       }
-    })
-
-    return NextResponse.json(userRole, { status: 201 })
+    }, { status: 200 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

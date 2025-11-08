@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
-import { authorizationService } from '@/services/authorizationService'
+import { clerkAuthService } from '@/services/clerkAuthService'
 import { z } from 'zod'
+
+/**
+ * Users API - Now using Clerk-based roles
+ *
+ * User data is stored in both Clerk and our database:
+ * - Clerk: Authentication, roles in publicMetadata
+ * - Database: Foreign key relationships (audit logs, stock movements)
+ */
 
 const CreateUserSchema = z.object({
   clerk_id: z.string(),
@@ -26,29 +34,28 @@ async function getUsersHandler(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const search = searchParams.get('search') || undefined
     const isActive = searchParams.get('isActive')
-    const roleId = searchParams.get('roleId') || undefined
 
     const result = await userService.listUsers({
       page,
       limit,
       search,
       isActive: isActive ? isActive === 'true' : undefined,
-      includeRoles: true
+      includeRoles: false // No longer fetching roles from DB
     })
 
-    // Add effective permissions for each user and transform to snake_case
+    // Get role and permissions from Clerk for each user
     const usersWithPermissions = await Promise.all(
       result.users.map(async (user: any) => {
-        const effectivePermissions = await authorizationService.getEffectivePermissions(user.id)
+        const { role, permissions } = await clerkAuthService.getEffectivePermissions(user.clerkId)
 
-        // Transform userRoles array if it exists
-        const userRoles = user.userRoles?.map((ur: any) => ({
-          id: ur.id,
+        // Format role as user_roles array for backward compatibility
+        const userRoles = role ? [{
+          id: role, // Use role name as ID
           role: {
-            id: ur.role.id,
-            name: ur.role.name
+            id: role,
+            name: role
           }
-        })) || []
+        }] : []
 
         return {
           id: user.id,
@@ -58,7 +65,7 @@ async function getUsersHandler(req: NextRequest) {
           last_name: user.lastName,
           is_active: user.isActive,
           user_roles: userRoles,
-          effectivePermissions
+          effectivePermissions: permissions
         }
       })
     )

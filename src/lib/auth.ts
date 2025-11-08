@@ -109,19 +109,17 @@ export async function check_permission(permission: string): Promise<boolean> {
  */
 export async function get_db_user(clerk_id: string) {
   return await prisma.user.findUnique({
-    where: { clerkId: clerk_id },
-    include: {
-      userRoles: {
-        include: {
-          role: true
-        }
-      }
-    }
+    where: { clerkId: clerk_id }
+    // No longer including userRoles - use clerkAuthService for roles
   })
 }
 
 /**
  * Create or update user in database from Clerk user
+ *
+ * Note: This only syncs basic user info for foreign key relationships.
+ * Roles are managed in Clerk publicMetadata, not in the database.
+ *
  * @param clerk_user Clerk user object
  * @returns Database user record
  */
@@ -146,17 +144,10 @@ export async function sync_user_to_database(clerk_user: any) {
         firstName: clerk_user.firstName,
         lastName: clerk_user.lastName,
         updatedAt: new Date(),
-      },
-      include: {
-        userRoles: {
-          include: {
-            role: true
-          }
-        }
       }
     })
   } else {
-    // Create new user
+    // Create new user (role should already be set in Clerk publicMetadata)
     const new_user = await prisma.user.create({
       data: {
         clerkId: clerk_user.id,
@@ -166,31 +157,8 @@ export async function sync_user_to_database(clerk_user: any) {
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      include: {
-        userRoles: {
-          include: {
-            role: true
-          }
-        }
       }
     })
-
-    // Assign default role
-    const default_role = await prisma.role.findFirst({
-      where: { name: 'read_only_user' }
-    })
-
-    if (default_role) {
-      await prisma.userRole.create({
-        data: {
-          userId: new_user.id,
-          roleId: default_role.id,
-          assignedAt: new Date(),
-          assignedBy: 'system',
-        },
-      })
-    }
 
     return new_user
   }

@@ -16,18 +16,7 @@ export interface UpdateUserInput {
   lastLoginAt?: Date
 }
 
-export interface UserWithRoles extends User {
-  userRoles: Array<{
-    id: string
-    role: {
-      id: string
-      name: string
-      permissions: string[]
-    }
-    isActive: boolean
-    expiresAt: Date | null
-  }>
-}
+// UserWithRoles interface removed - roles are now in Clerk publicMetadata
 
 export class UserService {
   async createUser(data: CreateUserInput): Promise<User> {
@@ -68,51 +57,8 @@ export class UserService {
     })
   }
 
-  async getUserWithRoles(id: string): Promise<UserWithRoles | null> {
-    return await prisma.user.findUnique({
-      where: { id },
-      include: {
-        userRoles: {
-          where: { isActive: true },
-          include: {
-            role: {
-              select: {
-                id: true,
-                name: true,
-                permissions: true
-              }
-            }
-          }
-        }
-      }
-    }) as UserWithRoles | null
-  }
-
-  async getUserWithActiveRoles(clerkId: string): Promise<UserWithRoles | null> {
-    return await prisma.user.findUnique({
-      where: { clerkId },
-      include: {
-        userRoles: {
-          where: {
-            isActive: true,
-            OR: [
-              { expiresAt: null },
-              { expiresAt: { gt: new Date() } }
-            ]
-          },
-          include: {
-            role: {
-              select: {
-                id: true,
-                name: true,
-                permissions: true
-              }
-            }
-          }
-        }
-      }
-    }) as UserWithRoles | null
-  }
+  // getUserWithRoles and getUserWithActiveRoles removed
+  // Use clerkAuthService to get roles from Clerk publicMetadata instead
 
   async updateUser(id: string, data: UpdateUserInput): Promise<User> {
     try {
@@ -180,9 +126,9 @@ export class UserService {
     limit?: number
     isActive?: boolean
     search?: string
-    includeRoles?: boolean
+    includeRoles?: boolean // Kept for backward compatibility but ignored
   } = {}): Promise<{
-    users: User[] | UserWithRoles[]
+    users: User[]
     total: number
     page: number
     limit: number
@@ -192,8 +138,7 @@ export class UserService {
       page = 1,
       limit = 20,
       isActive,
-      search,
-      includeRoles = false
+      search
     } = options
 
     const skip = (page - 1) * limit
@@ -209,25 +154,10 @@ export class UserService {
       })
     }
 
-    const include = includeRoles ? {
-      userRoles: {
-        where: { isActive: true },
-        include: {
-          role: {
-            select: {
-              id: true,
-              name: true,
-              permissions: true
-            }
-          }
-        }
-      }
-    } : undefined
-
+    // No longer including roles - use clerkAuthService for role data
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        include,
         skip,
         take: limit,
         orderBy: {
@@ -246,62 +176,11 @@ export class UserService {
     }
   }
 
-  async getUserPermissions(clerkId: string): Promise<string[]> {
-    const user = await this.getUserWithActiveRoles(clerkId)
-    if (!user) {
-      return []
-    }
-
-    const permissions = new Set<string>()
-
-    user.userRoles.forEach(userRole => {
-      if (Array.isArray(userRole.role.permissions)) {
-        userRole.role.permissions.forEach(permission => {
-          permissions.add(permission as string)
-        })
-      }
-    })
-
-    return Array.from(permissions)
-  }
-
-  async hasPermission(clerkId: string, requiredPermission: string): Promise<boolean> {
-    const permissions = await this.getUserPermissions(clerkId)
-
-    // Check for wildcard permissions (e.g., "user:*" covers "user:read", "user:create", etc.)
-    for (const permission of permissions) {
-      if (permission === requiredPermission) {
-        return true
-      }
-
-      if (permission.endsWith(':*')) {
-        const resource = permission.slice(0, -2)
-        if (requiredPermission.startsWith(resource + ':')) {
-          return true
-        }
-      }
-    }
-
-    return false
-  }
-
-  async hasAnyPermission(clerkId: string, requiredPermissions: string[]): Promise<boolean> {
-    for (const permission of requiredPermissions) {
-      if (await this.hasPermission(clerkId, permission)) {
-        return true
-      }
-    }
-    return false
-  }
-
-  async hasAllPermissions(clerkId: string, requiredPermissions: string[]): Promise<boolean> {
-    for (const permission of requiredPermissions) {
-      if (!(await this.hasPermission(clerkId, permission))) {
-        return false
-      }
-    }
-    return true
-  }
+  // Permission methods removed - use clerkAuthService instead:
+  // - clerkAuthService.getUserPermissions(clerkId)
+  // - clerkAuthService.hasPermission(clerkId, permission)
+  // - clerkAuthService.hasAnyPermission(clerkId, permissions)
+  // - clerkAuthService.hasAllPermissions(clerkId, permissions)
 
   async syncUserFromClerk(clerkUser: {
     id: string
@@ -333,46 +212,7 @@ export class UserService {
     }
   }
 
-  async getUserRoles(userId: string): Promise<Array<{
-    id: string
-    role: {
-      id: string
-      name: string
-      description: string | null
-      permissions: string[]
-    }
-    assignedAt: Date
-    expiresAt: Date | null
-    isActive: boolean
-  }>> {
-    const userRoles = await prisma.userRole.findMany({
-      where: { userId },
-      include: {
-        role: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            permissions: true
-          }
-        }
-      },
-      orderBy: { assignedAt: 'desc' }
-    })
-
-    return userRoles.map(ur => ({
-      id: ur.id,
-      role: {
-        id: ur.role.id,
-        name: ur.role.name,
-        description: ur.role.description,
-        permissions: ur.role.permissions as string[]
-      },
-      assignedAt: ur.assignedAt,
-      expiresAt: ur.expiresAt,
-      isActive: ur.isActive
-    }))
-  }
+  // getUserRoles removed - use clerkAuthService.getUserRole(clerkId) instead
 
   async getActiveUsers(): Promise<User[]> {
     return await prisma.user.findMany({

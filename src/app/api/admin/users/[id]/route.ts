@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/middleware/apiAuthMiddleware'
 import { userService } from '@/services/userService'
-import { authorizationService } from '@/services/authorizationService'
+import { clerkAuthService } from '@/services/clerkAuthService'
 import { z } from 'zod'
 
 const UpdateUserSchema = z.object({
@@ -17,7 +17,7 @@ async function getUserHandler(
 ) {
   try {
     const { id } = await params
-    const user = await userService.getUserWithRoles(id)
+    const user = await userService.getUserById(id)
 
     if (!user) {
       return NextResponse.json(
@@ -26,17 +26,17 @@ async function getUserHandler(
       )
     }
 
-    // Add effective permissions
-    const effectivePermissions = await authorizationService.getEffectivePermissions(user.id)
+    // Get role and permissions from Clerk
+    const { role, permissions } = await clerkAuthService.getEffectivePermissions(user.clerkId)
 
-    // Transform userRoles array to snake_case
-    const userRoles = user.userRoles?.map((ur: any) => ({
-      id: ur.id,
+    // Format role as user_roles array for backward compatibility
+    const userRoles = role ? [{
+      id: role,
       role: {
-        id: ur.role.id,
-        name: ur.role.name
+        id: role,
+        name: role
       }
-    })) || []
+    }] : []
 
     return NextResponse.json({
       id: user.id,
@@ -46,7 +46,7 @@ async function getUserHandler(
       last_name: user.lastName,
       is_active: user.isActive,
       user_roles: userRoles,
-      effectivePermissions
+      effectivePermissions: permissions
     })
   } catch (error) {
     console.error('Error fetching user:', error)

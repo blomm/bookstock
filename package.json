@@ -15,7 +15,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:assign-admin": "tsx scripts/assign-first-admin.ts"
+    "db:assign-admin": "tsx scripts/assign-first-admin.ts",
+    "db:sync-clerk-users": "tsx scripts/sync-clerk-users.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.0.0",

@@ -57,12 +57,22 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           throw new Error('Failed to fetch user')
         }
         const userData = await userResponse.json()
-        setUser(userData)
 
-        // Set current role
-        const currentRole = userData.userRoles.find((ur: any) => ur.isActive)
-        if (currentRole) {
-          setSelectedRoleId(currentRole.role.id)
+        // Transform snake_case to camelCase for state
+        const transformedUser = {
+          id: userData.id,
+          clerkId: userData.clerk_id,
+          email: userData.email,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          isActive: userData.is_active,
+          userRoles: userData.user_roles || []
+        }
+        setUser(transformedUser)
+
+        // Set current role - user_roles structure is [{id: role, role: {id: role, name: role}}]
+        if (userData.user_roles && userData.user_roles.length > 0) {
+          setSelectedRoleId(userData.user_roles[0].role.id)
         }
 
         // Fetch available roles

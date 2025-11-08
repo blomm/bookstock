@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import { Webhook } from 'svix'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/database'
-import { clerk_config, DEFAULT_USER_ROLE } from '@/lib/clerk'
+import { clerk_config } from '@/lib/clerk'
 
 /**
  * Clerk Webhook Handler
@@ -102,7 +102,7 @@ async function handle_user_created(evt: WebhookEvent) {
 
   console.log(`Creating user in database: ${id} (${primary_email})`)
 
-  // Create user in database
+  // Create user in database (roles are managed in Clerk publicMetadata)
   const user = await prisma.user.create({
     data: {
       clerkId: id,
@@ -115,25 +115,7 @@ async function handle_user_created(evt: WebhookEvent) {
     },
   })
 
-  // Assign default role to new user
-  const default_role = await prisma.role.findFirst({
-    where: { name: DEFAULT_USER_ROLE }
-  })
-
-  if (default_role) {
-    await prisma.userRole.create({
-      data: {
-        userId: user.id,
-        roleId: default_role.id,
-        assignedAt: new Date(),
-        assignedBy: 'system',
-      },
-    })
-
-    console.log(`Assigned default role '${DEFAULT_USER_ROLE}' to user ${id}`)
-  } else {
-    console.error(`Default role '${DEFAULT_USER_ROLE}' not found in database`)
-  }
+  console.log(`Successfully created user: ${id}. Role should be managed in Clerk publicMetadata.`)
 
   // Log the user creation event
   await prisma.auditLog.create({
@@ -172,8 +154,7 @@ async function handle_user_updated(evt: WebhookEvent) {
 
   // Find existing user
   const existing_user = await prisma.user.findUnique({
-    where: { clerkId: id },
-    include: { userRoles: { include: { role: true } } }
+    where: { clerkId: id }
   })
 
   if (!existing_user) {
@@ -181,7 +162,7 @@ async function handle_user_updated(evt: WebhookEvent) {
     return
   }
 
-  // Update user in database
+  // Update user in database (roles are managed in Clerk publicMetadata)
   const updated_user = await prisma.user.update({
     where: { clerkId: id },
     data: {
@@ -192,28 +173,7 @@ async function handle_user_updated(evt: WebhookEvent) {
     },
   })
 
-  // Handle role update from metadata
-  const newRoleName = public_metadata?.role as string | undefined
-  if (newRoleName && newRoleName !== existing_user.userRoles[0]?.role.name) {
-    const newRole = await prisma.role.findFirst({ where: { name: newRoleName } })
-
-    if (newRole) {
-      await prisma.userRole.updateMany({
-        where: { userId: existing_user.id },
-        data: { isActive: false },
-      })
-
-      await prisma.userRole.create({
-        data: {
-          userId: existing_user.id,
-          roleId: newRole.id,
-          assignedBy: 'clerk_webhook',
-        },
-      })
-
-      console.log(`Updated role for user ${id} to ${newRoleName}`)
-    }
-  }
+  console.log(`Successfully updated user: ${id}. Roles are managed in Clerk publicMetadata.`)
 
   // Log the user update event
   await prisma.auditLog.create({

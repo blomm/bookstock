@@ -1,5 +1,4 @@
-import { UserRole } from '@/lib/clerk'
-import { authorizationService } from '@/services/authorizationService'
+import { UserRole, has_permission, ROLE_PERMISSIONS } from '@/lib/clerk'
 
 export interface AuthorizationContext {
   userId: string
@@ -15,17 +14,16 @@ export async function createAuthorizationContext(
   userId: string,
   role: UserRole
 ): Promise<AuthorizationContext> {
-  const permissions = await authorizationService.getUserPermissions(userId)
+  const permissions = ROLE_PERMISSIONS[role] || []
 
   return {
     userId,
     role,
-    permissions,
-    can: (permission: string) => authorizationService.hasPermission(role, permission),
-    canAny: (perms: string[]) => authorizationService.hasAnyPermission(role, perms),
-    canAll: (perms: string[]) => authorizationService.hasAllPermissions(role, perms),
-    canAccess: (resource: string, action: string) =>
-      authorizationService.canAccessResource(role, resource, action)
+    permissions: [...permissions],
+    can: (permission: string) => has_permission(role, permission),
+    canAny: (perms: string[]) => perms.some(p => has_permission(role, p)),
+    canAll: (perms: string[]) => perms.every(p => has_permission(role, p)),
+    canAccess: (resource: string, action: string) => has_permission(role, `${resource}:${action}`)
   }
 }
 
@@ -222,7 +220,7 @@ export function validateResourceAccess(
   const missingPermissions: string[] = []
 
   requiredPermissions.forEach(permission => {
-    if (authorizationService.hasPermission(userRole, permission)) {
+    if (has_permission(userRole, permission)) {
       hasPermissions.push(permission)
     } else {
       missingPermissions.push(permission)
